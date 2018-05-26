@@ -1,8 +1,18 @@
 #include "Object.h"
 
-#include <map>
+#include "DataStructure/IntervalTree.h"
+#include <LexRisLogic/DataStructures/RTree.h>
 
 using namespace std;
+
+LL_MathStructure::MBB pair_to_mbb(Interval interval)
+{
+    LL_MathStructure::MBB mbb;
+    mbb.set_dimension(1);
+    mbb.first_point[0]=interval.first;
+    mbb.second_point[0]=interval.second;
+    return mbb;
+}
 
 bool compare_x_points(const MinMaxPoint& first, const MinMaxPoint& second)
 {
@@ -47,7 +57,7 @@ vector<int> LSDRS(vector<MinMaxPoint>& points,bool(*compare_func)(const MinMaxPo
     return index;
 }
 
-void fast_collision_SaP(Object& object,vector<pair<float,float>>& objects,
+void fast_collision_SaP(vector<Object>& objects,
                         vector<int>& total_collision,list<pair<int,int>>& collision)
 {
     int n=objects.size();
@@ -58,71 +68,110 @@ void fast_collision_SaP(Object& object,vector<pair<float,float>>& objects,
     vector<MinMaxPoint> points(n_2);
     for(int i=0;i<n;++i)
     {
-        object.set_pos(objects[i].first,objects[i].second);
-        points[i]=object.get_point(MinMaxType::T_MIN);
-        points[i+n]=object.get_point(MinMaxType::T_MAX);
+        points[i]=objects[i].get_point(MinMaxType::T_MIN);
+        points[i+n]=objects[i].get_point(MinMaxType::T_MAX);
     }
     vector<int> R(n_2);
     vector<int> iX=LSDRS(points,compare_x_points);
     for(int i=0;i<n_2;++i)
         R[iX[i]]=i;
     vector<int> iY=LSDRS(points,compare_y_points);
-    std::map<int,int> S;
+//    std::map<int,int> S;
+    LL_DataStructure::RTree<Interval,1,3> S(pair_to_mbb);
     for(int i=0;i<n_2;++i)
     {
         int p=iY[i];
         if(p<n)
         {
-            S[R[p]]=1;
-            S[R[p+n]]=1;
+//            S[R[p]]=1;
+//            S[R[p+n]]=1;
             int mini=R[p];
             int maxi=R[p+n];
             if(mini>maxi)
                 swap(mini,maxi);
-            auto result_f=S.upper_bound(mini);
-            for(auto i=result_f;i!=S.end() && i->first<maxi;++i)
+            Interval intervalo(mini,maxi);
+            S.insert(intervalo);
+//            std::cout<<"ADD- "<<p;
+//            std::cout<<std::endl;
+            std::list<Interval> result=S.range_query(pair_to_mbb(intervalo));
+            for(auto d=result.begin();d!=result.end();++d)
             {
-                int index_i=p%n;
-                int index_j=iX[(i->first)]%n;
+                if(*d==intervalo)
+                    continue;
+                int index_i=p;
+                int index_j=iX[(d->first)]%n;
                 ++total_collision[index_i];
                 ++total_collision[index_j];
                 collision.push_back(pair<int,int>(index_i,index_j));
+//                std::cout<<"\t- "<<index_j;
+//                std::cout<<"\n";
             }
+//            auto result_f=S.upper_bound(mini);
+//            for(auto i=result_f;i!=S.end() && i->first<maxi;++i)
+//            {
+//                int index_i=p%n;
+//                int index_j=iX[(i->first)]%n;
+//                ++total_collision[index_i];
+//                ++total_collision[index_j];
+//                collision.push_back(pair<int,int>(index_i,index_j));
+//            }
         }
         else
         {
-            auto rpn=S.find(R[p-n]);
-            auto rp=S.find(R[p]);
-            if(rpn!=S.end())
-                S.erase(rpn);
-            if(rp!=S.end())
-                S.erase(rp);
+            int mini=R[p-n];
+            int maxi=R[p];
+            if(mini>maxi)
+                swap(mini,maxi);
+            Interval intervalo(mini,maxi);
+            S.remove(intervalo);
+//            std::cout<<"REM- "<<p-n;
+//            std::cout<<std::endl;
+//            auto rpn=S.find(R[p-n]);
+//            auto rp=S.find(R[p]);
+//            if(rpn!=S.end())
+//                S.erase(rpn);
+//            if(rp!=S.end())
+//                S.erase(rp);
         }
     }
+//    std::cout<<std::endl;
+//    std::cout<<std::endl;
 }
 
 int main(int argc,char* argv[])
-{
-    if(argc!=6)
+{/*
+    IntervalTree tree;
+    tree.insert(Interval(2,1));
+    tree.insert(Interval(1,1));
+    tree.insert(Interval(12,1));
+    tree.insert(Interval(1,-1));
+    tree.insert(Interval(1,231));
+    print(tree.get_intervals());*/
+    float S_X=500;
+    float S_Y=300;
+    float space_of_object=0.2;
+    unsigned int total=1;
+    int total_test=100000;
+    if(argc==6)
     {
-        std::cout<<"SaP <Size X> <Size Y> <Object Space> <elements> <tests>"<<std::endl;
-        return -1;
+        S_X=LL::to_float(argv[1]);
+        S_Y=LL::to_float(argv[2]);
+        space_of_object=LL::to_float(argv[3]);
+        total=LL::to_int(argv[4]);
+        total_test=LL::to_int(argv[5]);
     }
+    else
+        std::cout<<"SaP <Size X> <Size Y> <Object Space> <elements> <tests>"<<std::endl;
     list<pair<int,int>> collision_list;
-    float S_X=LL::to_float(argv[1]);
-    float S_Y=LL::to_float(argv[2]);
     draw_polygon=false;
     LL_MathStructure::Point point(2);
-    Object object;
-    float space_of_object=LL::to_float(argv[3]);
-    point[0]=0;point[1]=0;
-    object.add_point(point);
-    point[0]=S_X*space_of_object;point[1]=S_Y*space_of_object;
-    object.add_point(point);
-    point[0]=S_X*space_of_object;point[1]=0;
-    object.add_point(point);
-    unsigned int total=LL::to_int(argv[4]);
-    int total_test=LL::to_int(argv[5]);
+//    Object object;
+//    point[0]=0;point[1]=0;
+//    object.add_point(point);
+//    point[0]=S_X*space_of_object;point[1]=S_Y*space_of_object;
+//    object.add_point(point);
+//    point[0]=S_X*space_of_object;point[1]=0;
+//    object.add_point(point);
     LL::random_generate_new_seed();
     LL_AL5::init_allegro();
     LL_AL5::primitives_addon();
@@ -138,13 +187,22 @@ int main(int argc,char* argv[])
     another_font.set_path("comic.ttf");
     another_font.set_size(S_X/50.0);
     another_font.load_ttf_font();
-    object.set_font(&font);
-    vector<pair<float,float>> objects(total);
+//    object.set_font(&font);
+    vector<Object> objects(total);
     vector<int> on_collision(total,false);
     for(unsigned int i=0;i<total;++i)
     {
-        objects[i].first=LL::random(0,S_X*(1.0-space_of_object));
-        objects[i].second=LL::random(0,S_Y*(1.0-space_of_object));
+        objects[i].set_pos(LL::random(40,S_X*(1.0-space_of_object)),
+                           LL::random(40,S_Y*(1.0-space_of_object)));
+        objects[i].set_font(&font);
+        objects[i].set_text(LL::to_string(i));
+        unsigned int sides = LL::random(3,6);
+        for(unsigned int side=0;side<sides;++side)
+        {
+            point[0]=LL::random(-40,40);
+            point[1]=LL::random(-40,40);
+            objects[i].add_point(point);
+        }
     }
     LL_AL5::KeyControl key_control;
     key_control.add_key("Collision",ALLEGRO_KEY_C);
@@ -154,6 +212,7 @@ int main(int argc,char* argv[])
     key_control.add_key("Add",ALLEGRO_KEY_A);
     key_control.add_key("Position",ALLEGRO_KEY_O);
     key_control.add_key("Print Collision",ALLEGRO_KEY_SPACE);
+    key_control.add_key("Controls",ALLEGRO_KEY_L);
     std::cout<<"Controles:"<<std::endl;
     std::cout<<"Make Collision: C"<<std::endl;
     std::cout<<"Show Polygon: P"<<std::endl;
@@ -226,18 +285,13 @@ int main(int argc,char* argv[])
         {
             for(unsigned int i=0;i<total;++i)
             {
-                object.set_pos(objects[i].first,objects[i].second);
                 color.red   =(on_collision[i]*11)%255;
                 color.green =(on_collision[i]*41)%255;
                 color.blue  =(on_collision[i]*73)%255;
-                object.draw_object(&display,green,color);
+                objects[i].draw_object(&display,green,color);
             }
             for(unsigned int i=0;i<total;++i)
-            {
-                object.set_text(LL::to_string(i));
-                object.set_pos(objects[i].first,objects[i].second);
-                object.draw_text(&display,black);
-            }
+                objects[i].draw_text(&display,black);
         }
         if(print_frames)
             display.draw(&fps_text,false);
@@ -268,12 +322,23 @@ int main(int argc,char* argv[])
             }
             if(input["Add"])
             {
-                for(unsigned int i=0;i<10;++i)
+                for(unsigned int i=0;i<1;++i)
                 {
                     ++total;
                     on_collision.push_back(0);
-                    objects.push_back(pair<float,float>(LL::random(0,S_X*(1.0-space_of_object)),
-                                                        LL::random(0,S_Y*(1.0-space_of_object))));
+                    Object object;
+                    object.set_pos(LL::random(40,S_X*(1.0-space_of_object)),
+                                   LL::random(40,S_Y*(1.0-space_of_object)));
+                    object.set_font(&font);
+                    object.set_text(LL::to_string(objects.size()));
+                    unsigned int sides = LL::random(3,6);
+                    for(unsigned int side=0;side<sides;++side)
+                    {
+                        point[0]=LL::random(-40,40);
+                        point[1]=LL::random(-40,40);
+                        object.add_point(point);
+                    }
+                    objects.push_back(object);
                 }
                 total_text=LL::to_string(total);
                 //input["Add"]=false;
@@ -282,6 +347,19 @@ int main(int argc,char* argv[])
             {
                 draw_polygon=!draw_polygon;
                 input["Polygon"]=false;
+            }
+            if(input["Controls"])
+            {
+                std::cout<<"Controles:"<<std::endl;
+                std::cout<<"Make Collision: C"<<std::endl;
+                std::cout<<"Show Polygon: P"<<std::endl;
+                std::cout<<"Show Frames: F"<<std::endl;
+                std::cout<<"Render Object: S"<<std::endl;
+                std::cout<<"Add Random Object: A"<<std::endl;
+                std::cout<<"Change Position: O"<<std::endl;
+                std::cout<<"Print Collision Info: SPACE"<<std::endl;
+                std::cout<<"--------------------"<<std::endl;
+                input["Controls"]=false;
             }
             if(input["Frames"])
             {
@@ -299,8 +377,8 @@ int main(int argc,char* argv[])
                     on_collision[i]=0;
                 for(unsigned int i=0;i<total;++i)
                 {
-                    objects[i].first=LL::random(0,S_X*(1.0-space_of_object));
-                    objects[i].second=LL::random(0,S_Y*(1.0-space_of_object));
+                    objects[i].set_pos(LL::random(40,S_X*(1.0-space_of_object)),
+                                       LL::random(40,S_Y*(1.0-space_of_object)));
                 }
                 input["Position"]=false;
             }
@@ -308,7 +386,7 @@ int main(int argc,char* argv[])
         if(collision)
         {
             time_collision.play();
-            fast_collision_SaP(object,objects,on_collision,collision_list);
+            fast_collision_SaP(objects,on_collision,collision_list);
             time_collision.stop();
             tiempos[test]=time_collision.get_time();
             total_test_text=LL::to_string(++test);

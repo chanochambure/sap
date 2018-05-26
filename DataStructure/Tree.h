@@ -1,5 +1,5 @@
-#ifndef INCLUDED_LIST_H
-#define INCLUDED_LIST_H
+#ifndef INCLUDED_TREE_H
+#define INCLUDED_TREE_H
 
 #include <stack>
 #include <iostream>
@@ -225,4 +225,4 @@ class Tree
         }
 };
 
-#endif // INCLUDED_LIST_H
+#endif // INCLUDED_TREE_H
