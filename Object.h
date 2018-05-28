@@ -18,6 +18,7 @@
 
 #include <LexRisLogic/MathStructures/Point.h>
 #include <LexRisLogic/MathStructures/Polygon.h>
+#include <LexRisLogic/MathStructures/MBB.h>
 
 #include <LexRisLogic/Math.h>
 #include <LexRisLogic/Convert.h>
@@ -37,9 +38,74 @@ struct MinMaxPoint
     LL_MathStructure::Point point;
 };
 
+struct Interval
+{
+    float first;
+    float second;
+    Interval()
+    {
+        first=0;
+        second=0;
+    }
+    Interval(float x, float y)
+    {
+        first=x;
+        second=y;
+    }
+};
+
+bool operator == (Interval i,Interval j)
+{
+    return i.first == j.first and i.second == j.second;
+}
+
+bool compare_x_points(const MinMaxPoint& first, const MinMaxPoint& second)
+{
+    return first.point[0]<second.point[0];
+}
+
+bool compare_y_points(const MinMaxPoint& first, const MinMaxPoint& second)
+{
+    return first.point[1]<second.point[1];
+}
+
+std::vector<int> LSDRS(std::vector<MinMaxPoint>& points,bool(*compare_func)(const MinMaxPoint&,const MinMaxPoint&))
+{
+    std::vector<int> index(points.size());
+    std::size_t n(0);
+    std::generate(std::begin(index),std::end(index),[&]{ return n++;});
+    MinMaxPoint max_value=points[0];
+    std::vector<std::queue<unsigned int>> queues(10);
+    for(unsigned int i=1;i<points.size();++i)
+    	if(compare_func(max_value,points[i]))
+    		max_value=points[i];
+    int in = (compare_func==compare_y_points);
+    unsigned int cifras = LL::to_string(max_value.point[in]).size();
+    for(unsigned int i=0;i<cifras;i++)
+    {
+    	for(unsigned int j=0;j<index.size();++j)
+    	{
+    		int d = int(points[index[j]].point[in]/pow(10,i))%10;
+    		queues[d].push(index[j]);
+    	}
+    	int p=0;
+    	for(unsigned int j=0;j<queues.size();++j)
+    	{
+    		while(!queues[j].empty())
+    		{
+    			index[p]=queues[j].front();
+    			queues[j].pop();
+    			++p;
+    		}
+    	}
+    }
+    return index;
+}
+
 class Object
 {
     private:
+        unsigned int _V_id=0;
         float _V_pos_x=0;
         float _V_pos_y=0;
         LL_MathStructure::Polygon _V_polygon;
@@ -55,6 +121,25 @@ class Object
             _V_max.set_dimension(2);
             _V_mbb.set_thickness(2);
         }
+        void clear()
+        {
+            _V_pos_x=0;
+            _V_pos_y=0;
+            _V_polygon.clear();
+            _V_min[0]=_V_min[1]=_V_max[0]=_V_max[1]=0;
+        }
+        unsigned int size()
+        {
+            return _V_polygon.size();
+        }
+        float get_pos_x()
+        {
+            return _V_pos_x;
+        }
+        float get_pos_y()
+        {
+            return _V_pos_y;
+        }
         void set_pos(float pos_x,float pos_y)
         {
             _V_pos_x=pos_x;
@@ -63,6 +148,18 @@ class Object
         void set_text(std::string text)
         {
             _V_text=text;
+        }
+        LL_MathStructure::Point operator [](unsigned int i)
+        {
+            return _V_polygon[i];
+        }
+        void add_point(float x,float y)
+        {
+            LL_MathStructure::Point point;
+            point.set_dimension(2);
+            point[0]=x;
+            point[1]=y;
+            add_point(point);
         }
         void add_point(LL_MathStructure::Point point)
         {
@@ -133,6 +230,14 @@ class Object
             _V_text.set_color(text_color);
             display->draw(&_V_text);
             display->set_cam(0,0);
+        }
+        void set_id(unsigned int id)
+        {
+            _V_id=id;
+        }
+        unsigned int get_id()
+        {
+            return _V_id;
         }
 };
 

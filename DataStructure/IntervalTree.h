@@ -3,22 +3,6 @@
 
 #include <vector>
 
-struct Interval
-{
-    float first;
-    float second;
-    Interval()
-    {
-        first=0;
-        second=0;
-    }
-    Interval(float x, float y)
-    {
-        first=x;
-        second=y;
-    }
-};
-
 void print(Interval interval)
 {
     std::cout<<"["<<interval.first<<", ";
@@ -30,11 +14,6 @@ void print(std::vector<Interval> intervals)
     for(auto i=intervals.begin();i != intervals.end();++i)
         print(*i);
     std::cout<<std::endl;
-}
-
-bool operator == (Interval i,Interval j)
-{
-    return i.first == j.first and i.second == j.second;
 }
 
 float compareBegin(Interval i,Interval j)
