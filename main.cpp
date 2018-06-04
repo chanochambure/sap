@@ -6,9 +6,66 @@
 #include "SAP_RTree1D.h"
 #include "RTree2D.h"
 #include "SAP_Unisize.h"
+#include "SAP_IntervalTree.h"
 
 int main(int argc,char* argv[])
 {
+//    IntervalTree tree;
+////    LL_DataStructure::RTree<Interval,1,5> tree(pair_to_mbb);
+//    bool read_scene;
+//    std::cout<<"Read Scene(1/0): ";
+//    std::cin>>read_scene;
+//    if(read_scene)
+//    {
+//        Scene scene("scene.txt");
+//        scene.load();
+//        int n=scene.get_objects().size();
+//        int n_2=scene.get_objects().size()*2;
+//        std::vector<MinMaxPoint> points(n_2);
+//        for(int i=0;i<n;++i)
+//        {
+//            points[i]=scene.get_objects()[i].get_point(MinMaxType::T_MIN);
+//            points[i+n]=scene.get_objects()[i].get_point(MinMaxType::T_MAX);
+//        }
+//        std::vector<int> R(n_2);
+//        std::vector<int> iX=LSDRS(points,compare_x_points);
+//        for(int i=0;i<n_2;++i)
+//            R[iX[i]]=i;
+//        for(int i=0;i<n;++i)
+//        {
+//            int mini=R[i];
+//            int maxi=R[i+n];
+//            tree.insert(Interval(mini,maxi));
+//        }
+//        std::cout<<"Total DATA: "<<tree.get_size()<<std::endl;
+////        std::cout<<"Total DATA: "<<tree.size()<<std::endl;
+//    }
+//    int option=1;
+//    while(option)
+//    {
+//        std::cout<<"Insert: 1\nRemove: 2\nRange: 3\nOption: ";
+//        std::cin>>option;
+//        if(option)
+//        {
+//            float a,b;
+//            std::cout<<"(a,b): ";
+//            std::cin>>a;
+//            std::cin>>b;
+//            if(option==1)
+//                std::cout<<tree.insert(Interval(a,b))<<"\n";
+//            if(option==2)
+//                std::cout<<tree.remove(Interval(a,b))<<"\n";
+//            if(option==3)
+//            {
+//                std::set<Interval> S=tree.query(Interval(a,b));
+////                std::list<Interval> S=tree.range_query(pair_to_mbb(Interval(a,b)));
+//                for(Interval i:S)
+//                    std::cout<<i.first<<" "<<i.second<<"\n";
+//            }
+//            std::cout<<"\n";
+//        }
+//    }
+//    return 0;
     LL::random_generate_new_seed();
     bool create_new_map=false;
     int mision=0;
@@ -56,7 +113,12 @@ int main(int argc,char* argv[])
             collision_function=SAP_Unisize_Box;
             break;
         }
-        std::cout<<"Ingresar Funcion: (1: SAP_RTree1D, 2: RTree2D,3: SAP_Unisize_Box): ";
+        else if(mision==4)
+        {
+            collision_function=SAP_IntervalTree;
+            break;
+        }
+        std::cout<<"Ingresar Funcion:\n1: SAP_RTree1D\n2: RTree2D\n3: SAP_Unisize_Box\n4: SAP_IntervalTree\nOpcion:";
         std::cin>>mision;
     }
     std::vector<int> on_collision(scene.size(),false);

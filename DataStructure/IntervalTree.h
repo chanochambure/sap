@@ -1,186 +1,384 @@
 #ifndef INCLUDED_INTERVAL_TREE_H
 #define INCLUDED_INTERVAL_TREE_H
 
-#include <vector>
+#include "../Object.h"
 
-void print(Interval interval)
-{
-    std::cout<<"["<<interval.first<<", ";
-    std::cout<<interval.second<<"] ";
-}
+#include <stack>
 
-void print(std::vector<Interval> intervals)
-{
-    for(auto i=intervals.begin();i != intervals.end();++i)
-        print(*i);
-    std::cout<<std::endl;
-}
+struct sweepLeftToRight {
+  bool operator() (const Interval& a, const Interval& b) const
+  {
+    if(a.first == b.first)
+        return a.second < b.second;
+    return a.first < b.first;
+  }
+};
 
-float compareBegin(Interval i,Interval j)
-{
-    float d=(i.first-j.first);
-    if(d)
-        return d;
-    return (i.second-j.second);
-}
-
-float compareEnd(Interval i,Interval j)
-{
-    float d=(i.second-j.second);
-    if(d)
-        return d;
-    return (i.first-j.first);
-}
+struct sweepRightToLeft {
+  bool operator() (const Interval& a, const Interval& b) const
+  {
+    if(a.second == b.second)
+        return a.first < b.first;
+    return a.second < b.second;
+  }
+};
 
 class IntervalTree
 {
     private:
-        struct _S_Structure_Node
+        struct Node
         {
-            float mid;
-            _S_Structure_Node* left;
-            _S_Structure_Node* right;
-            std::vector<Interval> left_points;
-            std::vector<Interval> right_points;
-            unsigned int count=0;
-            //Constructors
-            _S_Structure_Node(float mid, _S_Structure_Node* left, _S_Structure_Node* right,
-                          std::vector<Interval> left_points, std::vector<Interval> right_points)
+            std::set<Interval,sweepLeftToRight> increasing;
+            std::set<Interval,sweepRightToLeft> decreasing;
+            Node* left=nullptr;
+            Node* right=nullptr;
+            float midpoint=0;
+            int tree_height;
+            Node(Interval interval)
             {
-                this->mid=mid;
-                this->left=left;
-                this->right=right;
-                this->left_points=left_points;
-                this->right_points=right_points;
-                this->count=this->left_points.size();
-                if(this->left)
-                    this->count += left->count;
-                if(this->right)
-                    this->count += right->count;
+                decreasing.insert(interval);
+                increasing.insert(interval);
+                midpoint = interval.getMidpoint();
+                tree_height = 1;
             }
-            _S_Structure_Node* create_interval_tree(std::vector<Interval> intervals)
+            int height()
             {
-                if(intervals.size() == 0)
-                    return nullptr;
-                std::vector<float> pts;
-                for(auto i=intervals.begin();i!=intervals.end();++i)
-                {
-                    pts.push_back(i->first);
-                    pts.push_back(i->second);
-                }
-                std::sort(pts.begin(),pts.end());
-                float mid = pts[pts.size()>>1];
-                std::vector<Interval> leftIntervals;
-                std::vector<Interval> rightIntervals;
-                std::vector<Interval> centerIntervals;
-                for(unsigned int i=0; i<intervals.size(); ++i)
-                {
-                    Interval s = intervals[i];
-                    if(s.second < mid)
-                        leftIntervals.push_back(s);
-                    else if(mid < s.first)
-                        rightIntervals.push_back(s);
-                    else
-                        centerIntervals.push_back(s);
-                }
-                //Split center intervals
-                std::vector<Interval> leftPoints = centerIntervals;
-                std::vector<Interval> rightPoints = centerIntervals;
-                std::sort(leftPoints.begin(),leftPoints.end(),compareBegin);
-                std::sort(rightPoints.begin(),rightPoints.end(),compareEnd);
-                return new _S_Structure_Node(mid,
-                                             create_interval_tree(leftIntervals),
-                                             create_interval_tree(rightIntervals),
-                                             leftPoints,
-                                             rightPoints);
+                return tree_height;
             }
-            void rebuild(std::vector<Interval> intervals)
-            {
-                _S_Structure_Node* ntree = create_interval_tree(intervals);
-                if(ntree)
-                {
-                    this->mid = ntree->mid;
-                    this->left = ntree->left;
-                    this->right = ntree->right;
-                    this->left_points = ntree->left_points;
-                    this->right_points = ntree->right_points;
-                    this->count = ntree->count;
-                    delete(ntree);
-                }
+            int height(Node* node){
+                return node && node->height();
             }
-            void rebuild_with_interval(Interval interval)
+            Node* balanceOut()
             {
-                std::vector<Interval> result;
-                get_intervals(result);
-                result.push_back(interval);
-                rebuild(result);
-            }
-            //Other
-            void get_intervals(std::vector<Interval>& result)
-            {
-                result.insert(result.end(), this->left_points.begin(), this->left_points.end());
-                if(this->left)
-                    this->left->get_intervals(result);
-                if(this->right)
-                    this->right->get_intervals(result);
-            }
-            //Functions
-            void insert(Interval interval)
-            {
-                std::cout<<interval.first<<" "<<interval.second<<std::endl;
-                unsigned int weight = this->count - this->left_points.size();
-                this->count+=1;
-                if(interval.second < this->mid)
-                {
-                    if(this->left)
-                    {
-                        if(4*(this->left->count+1) > 3*(weight+1))
-                            rebuild_with_interval(interval);
-                        else
-                            this->left->insert(interval);
+                int balance = height(left) - height(right);
+                if (balance < -1){
+                    // The tree is right-heavy.
+                    if (height(right->left) > height(right->right)){
+                        this->right = this->right->rightRotate();
+                        return leftRotate();
+                    } else{
+                        return leftRotate();
                     }
-                    else
-                        this->left=create_interval_tree({interval});
+                } else if (balance > 1){
+                    // The tree is left-heavy.
+                    if (height(left->right) > height(left->left)){
+                        this->left = this->left->leftRotate();
+                        return rightRotate();
+                    } else
+                        return rightRotate();
+                } else {
+                    // The tree is already balanced.
+                    return this;
                 }
-                else if(interval.first > this->mid)
-                {
-                    if(this->right)
+            }
+            Node* leftRotate()
+            {
+                Node* head = right;
+                right = head->left;
+                head->left = this;
+                tree_height = std::max(height(right), height(left)) + 1;
+                head->left = head->assimilateOverlappingIntervals(this);
+                return head;
+            }
+            Node* rightRotate()
+            {
+                Node* head = left;
+                left = head->right;
+                head->right = this;
+                tree_height = std::max(height(right), height(left)) + 1;
+                head->right = head->assimilateOverlappingIntervals(this);
+                return head;
+            }
+            Node* assimilateOverlappingIntervals(Node* from)
+            {
+                std::list<Interval> tmp;
+                if (compareTo(midpoint,from->midpoint) < 0){
+                    auto i=from->increasing.begin();
+                    while(i!=from->increasing.end())
                     {
-                        if(4*(this->right->count+1) > 3*(weight+1))
-                            rebuild_with_interval(interval);
-                        else
-                            this->right->insert(interval);
+                        Interval next=*i;
+                        if (next.isRightOf(midpoint))
+                            break;
+                        tmp.push_back(next);
+                        ++i;
                     }
-                    else
-                        this->right=create_interval_tree({interval});
                 }
                 else
                 {
-                    auto l=std::lower_bound(this->left_points.begin(),this->left_points.end(),interval,compareBegin);
-                    auto r=std::lower_bound(this->right_points.begin(),this->right_points.end(),interval,compareEnd);
-                    this->left_points.insert(l,interval);
-                    this->right_points.insert(r,interval);
+                    auto i=from->decreasing.begin();
+                    while(i!=from->decreasing.end())
+                    {
+                        Interval next=*i;
+                        if (next.isLeftOf(midpoint))
+                            break;
+                        tmp.push_back(next);
+                        ++i;
+                    }
+                }
+                for(auto i=tmp.begin();i!=tmp.end();++i)
+                {
+                    Interval next=*i;
+                    auto inc=from->increasing.find(next);
+                    if(inc != from->increasing.end())
+                        from->increasing.erase(inc);
+                    auto dec=from->decreasing.find(next);
+                    if(dec != from->decreasing.end())
+                        from->decreasing.erase(dec);
+                }
+                increasing.insert(tmp.begin(),tmp.end());
+                decreasing.insert(tmp.begin(),tmp.end());
+                if (from->increasing.size() == 0){
+                    return deleteNode(from);
+                }
+                return from;
+            }
+            static Node* deleteNode(Node* root)
+            {
+                if (root->left == nullptr && root->right == nullptr)
+                    return nullptr;
+
+                if (root->left == nullptr)
+                    return root->right;
+                else
+                {
+                    Node* node = root->left;
+                    std::stack<Node*> new_stack;
+                    while (node->right != nullptr){
+                        new_stack.push(node);
+                        node = node->right;
+                    }
+                    if (!new_stack.empty()) {
+                        new_stack.top()->right = node->left;
+                        node->left = root->left;
+                    }
+                    node->right = root->right;
+
+                    Node* newRoot = node;
+                    while (!new_stack.empty()){
+                        node = new_stack.top();
+                        new_stack.pop();
+                        if (!new_stack.empty())
+                            new_stack.top()->right = newRoot->assimilateOverlappingIntervals(node);
+                        else
+                            newRoot->left = newRoot->assimilateOverlappingIntervals(node);
+                    }
+                    return newRoot->balanceOut();
                 }
             }
+            static Node* addInterval(IntervalTree* tree, Node* root, Interval interval)
+            {
+                if (root == nullptr) {
+                    tree->size++;
+                    return new Node(interval);
+                }
+                if (interval.contains(root->midpoint))
+                {
+                    auto v=root->decreasing.insert(interval);
+                    if(v.second)
+                        tree->size++;
+                    root->increasing.insert(interval);
+                    return root;
+                } else if (interval.isLeftOf(root->midpoint)){
+                    root->left = addInterval(tree, root->left, interval);
+                    root->tree_height = std::max(root->height(root->left), root->height(root->right))+1;
+                } else {
+                    root->right = addInterval(tree, root->right, interval);
+                    root->tree_height = std::max(root->height(root->left), root->height(root->right))+1;
+                }
+
+                return root->balanceOut();
+            }
+            static Node* removeInterval(IntervalTree* tree, Node* root, Interval interval)
+            {
+                if (root == nullptr)
+                    return nullptr;
+                if (interval.contains(root->midpoint)){
+                    auto iter=root->decreasing.find(interval);
+                    if(iter!=root->decreasing.end())
+                    {
+                        root->decreasing.erase(iter);
+                        tree->size--;
+                    }
+                    auto iter2=root->increasing.find(interval);
+                    if(iter2!=root->increasing.end())
+                        root->increasing.erase(iter2);
+                    if (root->increasing.size() == 0){
+                        return deleteNode(root);
+                    }
+
+                } else if (interval.isLeftOf(root->midpoint)){
+                    root->left = removeInterval(tree, root->left, interval);
+                } else {
+                    root->right = removeInterval(tree, root->right, interval);
+                }
+                return root->balanceOut();
+            }
+            static void rangeQueryLeft(Node* node, Interval query, std::set<Interval>& result)
+            {
+                while (node != nullptr)
+                {
+                    if (query.contains(node->midpoint)) {
+                        result.insert(node->increasing.begin(),node->increasing.end());
+                        if (node->right)
+                        {
+                            Node::iterator iter=node->right->begin();
+                            while(iter.hasNext())
+                            {
+                                result.insert(iter.get());
+                                iter.next();
+                            }
+                        }
+                        node = node->left;
+                    } else {
+                        for(auto i=node->decreasing.begin();i!=node->decreasing.end();++i)
+                        {
+                            Interval next=*i;
+                            if (next.isLeftOf(query))
+                                break;
+                            result.insert(next);
+                        }
+                        node = node->right;
+                    }
+                }
+            }
+            static void rangeQueryRight(Node* node, Interval query, std::set<Interval>& result)
+            {
+                while (node)
+                {
+                    if (query.contains(node->midpoint)) {
+                        result.insert(node->increasing.begin(),node->increasing.end());
+                        if (node->left)
+                        {
+                            Node::iterator iter=node->left->begin();
+                            while(iter.hasNext())
+                            {
+                                result.insert(iter.get());
+                                iter.next();
+                            }
+                        }
+                        node = node->right;
+                    } else {
+                        for(auto i=node->increasing.begin();i!=node->increasing.end();++i)
+                        {
+                            Interval next=*i;
+                            if (next.isRightOf(query))
+                                break;
+                            result.insert(next);
+                        }
+                        node = node->left;
+                    }
+                }
+            }
+            struct iterator
+            {
+                std::stack<Node*> main_stack;
+                Node* root=nullptr;
+                Node* current_node=nullptr;
+                std::set<Interval>::iterator main_iterator;
+                std::set<Interval>::iterator end_iterator;
+                iterator(Node* node)
+                {
+                    if(node)
+                    {
+                        for(root=node;root;root=root->left)
+                            main_stack.push(root);
+                        current_node = main_stack.top();
+                        main_stack.pop();
+                        main_iterator = current_node->increasing.begin();
+                        end_iterator = current_node->increasing.end();
+                        root = current_node->right;
+                    }
+                }
+                bool hasNext()
+                {
+                    return root || !main_stack.empty() || main_iterator!=end_iterator;
+                }
+                void next()
+                {
+                    ++main_iterator;
+                    if(main_iterator==end_iterator)
+                    {
+                        for(;root;root=root->left)
+                            main_stack.push(root);
+                        if(! main_stack.empty())
+                        {
+                            current_node = main_stack.top();
+                            main_stack.pop();
+                            main_iterator = current_node->increasing.begin();
+                            end_iterator = current_node->increasing.end();
+                            root = current_node->right;
+                        }
+                    }
+                }
+                Interval get()
+                {
+                    return *main_iterator;
+                }
+            };
+            iterator begin()
+            {
+                return iterator(this);
+            }
         };
-        unsigned int _V_size=0;
-        _S_Structure_Node* _V_root=nullptr;
-    public:
+        unsigned int size=0;
+        Node* root=nullptr;
+        public:
         IntervalTree()
         {
         }
-        void insert(Interval interval)
-        {
-            if(_V_root)
-                _V_root->insert(interval);
-            else
-                _V_root = new _S_Structure_Node(interval.first, nullptr, nullptr, {interval}, {interval});
+        bool insert(Interval interval){
+            unsigned int sizeBeforeOperation = size;
+            root = Node::addInterval(this, root, interval);
+            return size != sizeBeforeOperation;
         }
-        std::vector<Interval> get_intervals()
-        {
-            std::vector<Interval> result;
-            _V_root->get_intervals(result);
+        std::set<Interval> query(Interval interval){
+            std::set<Interval> result;
+            Node* node = root;
+            while(node != nullptr)
+            {
+                if (interval.contains(node->midpoint))
+                {
+                    result.insert(node->increasing.begin(),node->increasing.end());
+                    Node::rangeQueryLeft(node->left, interval, result);
+                    Node::rangeQueryRight(node->right, interval, result);
+                    break;
+                }
+                if (interval.isLeftOf(node->midpoint))
+                {
+                    for(auto i=node->increasing.begin();i!=node->increasing.end();++i)
+                    {
+                        Interval next=*i;
+                        if (!interval.intersects(next))
+                            break;
+                        result.insert(next);
+                    }
+                    node = node->left;
+                }
+                else
+                {
+                    for(auto i=node->decreasing.begin();i!=node->decreasing.end();++i)
+                    {
+                        Interval next=*i;
+                        if (!interval.intersects(next))
+                            break;
+                        result.insert(next);
+                    }
+                    node = node->right;
+                }
+            }
             return result;
+        }
+        bool remove(Interval interval)
+        {
+            if (root == nullptr)
+                return false;
+            unsigned int sizeBeforeOperation = size;
+            root = Node::removeInterval(this, root, interval);
+            return size != sizeBeforeOperation;
+        }
+        unsigned int get_size()
+        {
+            return size;
         }
 };
 

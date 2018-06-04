@@ -38,6 +38,15 @@ struct MinMaxPoint
     LL_MathStructure::Point point;
 };
 
+int compareTo(float a,float b)
+{
+    if(a<b)
+        return -1;
+    else if(a>b)
+        return 1;
+    return 0;
+}
+
 struct Interval
 {
     float first;
@@ -52,11 +61,47 @@ struct Interval
         first=x;
         second=y;
     }
+    float getMidpoint()
+    {
+		return (first+second)/2.0;
+    }
+	bool contains(float point)
+	{
+	    return first<=point && point<second;
+	}
+	bool isLeftOf(float point)
+	{
+	    return point >= second;
+	}
+	bool isRightOf(float point){
+		return point < first;
+	}
+	bool intersects(Interval query)
+	{
+	    return LL::segment_collision(first,second,query.first,query.second);
+	}
+	bool contains(Interval query)
+	{
+	    return contains(query.first) and contains(query.second);
+	}
+	bool isLeftOf(Interval other){
+		return isLeftOf(other.first);
+	}
+	bool isRightOf(Interval other){
+		return isRightOf(other.second);
+	}
 };
 
 bool operator == (Interval i,Interval j)
 {
     return i.first == j.first and i.second == j.second;
+}
+
+bool operator < (Interval i,Interval j)
+{
+    if(i.first == j.first)
+        return i.second < j.second;
+    return i.first < j.first;
 }
 
 bool compare_x_points(const MinMaxPoint& first, const MinMaxPoint& second)
