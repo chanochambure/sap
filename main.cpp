@@ -81,12 +81,21 @@ int main(int argc,char* argv[])
     bool create_new_map=false;
     int mision=0;
     int max_test=-1;
-    if(argc == 5)
+    bool command=false;
+    bool unisize=false;
+    int total=-1;
+    if(argc >= 5)
     {
         create_new_map=LL::to_int(argv[1]);
         mision=LL::to_int(argv[2]);
         max_test=LL::to_int(argv[3]);
         collision=LL::to_int(argv[4]);
+        if(create_new_map && argc >=7)
+        {
+            unisize=LL::to_int(argv[5]);
+            total=LL::to_int(argv[6]);
+            command=true;
+        }
     }
     else if(argc==1)
     {
@@ -95,17 +104,18 @@ int main(int argc,char* argv[])
     }
     else
     {
-        std::cout<<"SaP <CreateNEW> <ALGORITHM> <TEST> <START>"<<std::endl;
+        std::cout<<"SaP <CreateNEW> <ALGORITHM> <TEST> <START> [<UNISIZE> <TOTAL>]"<<std::endl;
         return -1;
     }
     Scene scene("scene.txt");
     scene.load();
     if(create_new_map)
     {
-        bool unisize=false;
-        int total = 0;
-        std::cout<<"Unisize (1/0): ";
-        std::cin>>unisize;
+        if(!command)
+        {
+            std::cout<<"Unisize (1/0): ";
+            std::cin>>unisize;
+        }
         while(total <= 0)
         {
             std::cout<<"Total de Elementos: ";
@@ -114,26 +124,31 @@ int main(int argc,char* argv[])
         scene.create(unisize,total);
         scene.save();
     }
+    std::string name_function;
     void (*collision_function)(std::vector<Object>&,std::vector<int>&,std::list<std::pair<int,int>>&)=nullptr;
     while(1)
     {
         if(mision==1)
         {
+            name_function="SAP RTree 1D";
             collision_function=SAP_RTree1D;
             break;
         }
         else if(mision==2)
         {
+            name_function="RTree 2D";
             collision_function=RTree2D;
             break;
         }
         else if(mision==3)
         {
+            name_function="SAP Unisize BOX";
             collision_function=SAP_Unisize_Box;
             break;
         }
         else if(mision==4)
         {
+            name_function="SAP Interval Tree";
             collision_function=SAP_IntervalTree;
             break;
         }
@@ -222,7 +237,7 @@ int main(int argc,char* argv[])
     double acum=0;
     int test=0;
     LL::Chronometer time_collision;
-	std::vector<float> tiempos;
+    std::vector<float> tiempos;
     while(!input.get_display_status() && test!=max_test)
     {
         ++total_frames;
@@ -331,8 +346,18 @@ int main(int argc,char* argv[])
     }
     input.unregister_display();
     input.unregister_timer();
-    std::cout<<"Min:  "<<min_time<<std::endl;
-    std::cout<<"Max:  "<<max_time<<std::endl;
-    std::cout<<"Prom: "<<acum/test<<std::endl;
+    if(test)
+    {
+        std::cout<<"_________________________________________________"<<std::endl;
+        std::cout<<"Total:     "<<scene.size()<<std::endl;
+        std::cout<<"Test:      "<<test<<std::endl;
+        std::cout<<"Algorithm: "<<name_function<<std::endl;
+        std::cout<<"_________________________________________________"<<std::endl;
+        std::cout<<"Min:       "<<min_time<<std::endl;
+        std::cout<<"Max:       "<<max_time<<std::endl;
+        std::cout<<"Prom:      "<<acum/test<<std::endl;
+        std::cout<<"_________________________________________________"<<std::endl;
+        std::cout<<std::endl;
+    }
     return 0;
 }
