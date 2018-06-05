@@ -10,74 +10,93 @@
 
 int main(int argc,char* argv[])
 {
-//    IntervalTree tree;
-////    LL_DataStructure::RTree<Interval,1,5> tree(pair_to_mbb);
-//    bool read_scene;
-//    std::cout<<"Read Scene(1/0): ";
-//    std::cin>>read_scene;
-//    if(read_scene)
+//    bool tree_test;
+//    std::cout<<"Tree Test(1/0): ";
+//    std::cin>>tree_test;
+//    if(tree_test)
 //    {
-//        Scene scene("scene.txt");
-//        scene.load();
-//        int n=scene.get_objects().size();
-//        int n_2=scene.get_objects().size()*2;
-//        std::vector<MinMaxPoint> points(n_2);
-//        for(int i=0;i<n;++i)
+//        IntervalTree tree;
+//    //    LL_DataStructure::RTree<Interval,1,5> tree(pair_to_mbb);
+//        bool read_scene;
+//        std::cout<<"Read Scene(1/0): ";
+//        std::cin>>read_scene;
+//        if(read_scene)
 //        {
-//            points[i]=scene.get_objects()[i].get_point(MinMaxType::T_MIN);
-//            points[i+n]=scene.get_objects()[i].get_point(MinMaxType::T_MAX);
-//        }
-//        std::vector<int> R(n_2);
-//        std::vector<int> iX=LSDRS(points,compare_x_points);
-//        for(int i=0;i<n_2;++i)
-//            R[iX[i]]=i;
-//        for(int i=0;i<n;++i)
-//        {
-//            int mini=R[i];
-//            int maxi=R[i+n];
-//            tree.insert(Interval(mini,maxi));
-//        }
-//        std::cout<<"Total DATA: "<<tree.get_size()<<std::endl;
-////        std::cout<<"Total DATA: "<<tree.size()<<std::endl;
-//    }
-//    int option=1;
-//    while(option)
-//    {
-//        std::cout<<"Insert: 1\nRemove: 2\nRange: 3\nOption: ";
-//        std::cin>>option;
-//        if(option)
-//        {
-//            float a,b;
-//            std::cout<<"(a,b): ";
-//            std::cin>>a;
-//            std::cin>>b;
-//            if(option==1)
-//                std::cout<<tree.insert(Interval(a,b))<<"\n";
-//            if(option==2)
-//                std::cout<<tree.remove(Interval(a,b))<<"\n";
-//            if(option==3)
+//            Scene scene("scene.txt");
+//            scene.load();
+//            int n=scene.get_objects().size();
+//            int n_2=scene.get_objects().size()*2;
+//            std::vector<MinMaxPoint> points(n_2);
+//            for(int i=0;i<n;++i)
 //            {
-//                std::set<Interval> S=tree.query(Interval(a,b));
-////                std::list<Interval> S=tree.range_query(pair_to_mbb(Interval(a,b)));
-//                for(Interval i:S)
-//                    std::cout<<i.first<<" "<<i.second<<"\n";
+//                points[i]=scene.get_objects()[i].get_point(MinMaxType::T_MIN);
+//                points[i+n]=scene.get_objects()[i].get_point(MinMaxType::T_MAX);
 //            }
-//            std::cout<<"\n";
+//            std::vector<int> R(n_2);
+//            std::vector<int> iX=LSDRS(points,compare_x_points);
+//            for(int i=0;i<n_2;++i)
+//                R[iX[i]]=i;
+//            for(int i=0;i<n;++i)
+//            {
+//                int mini=R[i];
+//                int maxi=R[i+n];
+//                tree.insert(Interval(mini,maxi));
+//            }
+//            std::cout<<"Total DATA: "<<tree.get_size()<<std::endl;
+//    //        std::cout<<"Total DATA: "<<tree.size()<<std::endl;
 //        }
+//        int option=1;
+//        while(option)
+//        {
+//            std::cout<<"Insert: 1\nRemove: 2\nRange: 3\nOption: ";
+//            std::cin>>option;
+//            if(option)
+//            {
+//                float a,b;
+//                std::cout<<"(a,b): ";
+//                std::cin>>a;
+//                std::cin>>b;
+//                if(option==1)
+//                    std::cout<<tree.insert(Interval(a,b))<<"\n";
+//                if(option==2)
+//                    std::cout<<tree.remove(Interval(a,b))<<"\n";
+//                if(option==3)
+//                {
+//                    std::set<Interval> S=tree.query(Interval(a,b));
+//    //                std::list<Interval> S=tree.range_query(pair_to_mbb(Interval(a,b)));
+//                    for(Interval i:S)
+//                        std::cout<<i.first<<" "<<i.second<<"\n";
+//                }
+//                std::cout<<"\n";
+//            }
+//        }
+//        return 0;
 //    }
-//    return 0;
+    bool print_collision=false;
+    bool collision=false;
+    bool render_frames=false;
+    bool print_frames=true;
+    bool draw_polygon=false;
     LL::random_generate_new_seed();
     bool create_new_map=false;
     int mision=0;
-    if(argc == 3)
+    int max_test=-1;
+    if(argc == 5)
     {
         create_new_map=LL::to_int(argv[1]);
         mision=LL::to_int(argv[2]);
+        max_test=LL::to_int(argv[3]);
+        collision=LL::to_int(argv[4]);
     }
-    else
+    else if(argc==1)
     {
         std::cout<<"Nuevo Mapa (1/0): ";
         std::cin>>create_new_map;
+    }
+    else
+    {
+        std::cout<<"SaP <CreateNEW> <ALGORITHM> <TEST> <START>"<<std::endl;
+        return -1;
     }
     Scene scene("scene.txt");
     scene.load();
@@ -144,14 +163,14 @@ int main(int argc,char* argv[])
     key_control.add_key("Collision",ALLEGRO_KEY_C);
     key_control.add_key("Print Collision",ALLEGRO_KEY_SPACE);
     key_control.add_key("Controls",ALLEGRO_KEY_L);
-    std::cout<<"Controls:"<<std::endl;
-    std::cout<<"Show Polygon: P"<<std::endl;
-    std::cout<<"Show Frames: F"<<std::endl;
-    std::cout<<"Render Object: S"<<std::endl;
-    std::cout<<"Show Controls: L"<<std::endl;
-    std::cout<<"Make Collision: C"<<std::endl;
-    std::cout<<"Print Collision Info: SPACE"<<std::endl;
-    std::cout<<"--------------------"<<std::endl;
+//    std::cout<<"Controls:"<<std::endl;
+//    std::cout<<"Show Polygon: P"<<std::endl;
+//    std::cout<<"Show Frames: F"<<std::endl;
+//    std::cout<<"Render Object: S"<<std::endl;
+//    std::cout<<"Show Controls: L"<<std::endl;
+//    std::cout<<"Make Collision: C"<<std::endl;
+//    std::cout<<"Print Collision Info: SPACE"<<std::endl;
+//    std::cout<<"--------------------"<<std::endl;
     int total_frames=0;
     LL::Chronometer time;
     std::list<std::pair<int,int>> collision_list;
@@ -160,11 +179,6 @@ int main(int argc,char* argv[])
     input.register_display(display);
     input.keyboard_on();
     input.set_key_control(&key_control);
-    bool print_collision=false;
-    bool collision=false;
-    bool render_frames=false;
-    bool print_frames=true;
-    bool draw_polygon=false;
     LL_AL5::Color black;
     LL_AL5::Color green(0,255);
     LL_AL5::Color color;
@@ -209,7 +223,7 @@ int main(int argc,char* argv[])
     int test=0;
     LL::Chronometer time_collision;
 	std::vector<float> tiempos;
-    while(!input.get_display_status())
+    while(!input.get_display_status() && test!=max_test)
     {
         ++total_frames;
         display.clear();
@@ -317,5 +331,8 @@ int main(int argc,char* argv[])
     }
     input.unregister_display();
     input.unregister_timer();
+    std::cout<<"Min:  "<<min_time<<std::endl;
+    std::cout<<"Max:  "<<max_time<<std::endl;
+    std::cout<<"Prom: "<<acum/test<<std::endl;
     return 0;
 }

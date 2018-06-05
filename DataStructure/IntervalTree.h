@@ -18,8 +18,8 @@ struct sweepRightToLeft {
   bool operator() (const Interval& a, const Interval& b) const
   {
     if(a.second == b.second)
-        return a.first < b.first;
-    return a.second < b.second;
+        return a.first > b.first;
+    return a.second > b.second;
   }
 };
 

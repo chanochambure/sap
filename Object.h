@@ -71,7 +71,7 @@ struct Interval
 	}
 	bool isLeftOf(float point)
 	{
-	    return point >= second;
+	    return second <= point;
 	}
 	bool isRightOf(float point){
 		return point < first;
