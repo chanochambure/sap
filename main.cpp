@@ -10,68 +10,6 @@
 
 int main(int argc,char* argv[])
 {
-//    bool tree_test;
-//    std::cout<<"Tree Test(1/0): ";
-//    std::cin>>tree_test;
-//    if(tree_test)
-//    {
-//        IntervalTree tree;
-//    //    LL_DataStructure::RTree<Interval,1,5> tree(pair_to_mbb);
-//        bool read_scene;
-//        std::cout<<"Read Scene(1/0): ";
-//        std::cin>>read_scene;
-//        if(read_scene)
-//        {
-//            Scene scene("scene.txt");
-//            scene.load();
-//            int n=scene.get_objects().size();
-//            int n_2=scene.get_objects().size()*2;
-//            std::vector<MinMaxPoint> points(n_2);
-//            for(int i=0;i<n;++i)
-//            {
-//                points[i]=scene.get_objects()[i].get_point(MinMaxType::T_MIN);
-//                points[i+n]=scene.get_objects()[i].get_point(MinMaxType::T_MAX);
-//            }
-//            std::vector<int> R(n_2);
-//            std::vector<int> iX=LSDRS(points,compare_x_points);
-//            for(int i=0;i<n_2;++i)
-//                R[iX[i]]=i;
-//            for(int i=0;i<n;++i)
-//            {
-//                int mini=R[i];
-//                int maxi=R[i+n];
-//                tree.insert(Interval(mini,maxi));
-//            }
-//            std::cout<<"Total DATA: "<<tree.get_size()<<std::endl;
-//    //        std::cout<<"Total DATA: "<<tree.size()<<std::endl;
-//        }
-//        int option=1;
-//        while(option)
-//        {
-//            std::cout<<"Insert: 1\nRemove: 2\nRange: 3\nOption: ";
-//            std::cin>>option;
-//            if(option)
-//            {
-//                float a,b;
-//                std::cout<<"(a,b): ";
-//                std::cin>>a;
-//                std::cin>>b;
-//                if(option==1)
-//                    std::cout<<tree.insert(Interval(a,b))<<"\n";
-//                if(option==2)
-//                    std::cout<<tree.remove(Interval(a,b))<<"\n";
-//                if(option==3)
-//                {
-//                    std::set<Interval> S=tree.query(Interval(a,b));
-//    //                std::list<Interval> S=tree.range_query(pair_to_mbb(Interval(a,b)));
-//                    for(Interval i:S)
-//                        std::cout<<i.first<<" "<<i.second<<"\n";
-//                }
-//                std::cout<<"\n";
-//            }
-//        }
-//        return 0;
-//    }
     bool print_collision=false;
     bool collision=false;
     bool render_frames=false;
@@ -125,7 +63,13 @@ int main(int argc,char* argv[])
         scene.save();
     }
     std::string name_function;
-    void (*collision_function)(std::vector<Object>&,std::vector<int>&,std::list<std::pair<int,int>>&)=nullptr;
+    void (*collision_function)(
+                               std::vector<Object>&,
+                               std::vector<int>&,
+                               std::list<std::pair<int,int>>&,
+                               float*,
+                               float*
+                               )=nullptr;
     while(1)
     {
         if(mision==1)
@@ -236,8 +180,7 @@ int main(int argc,char* argv[])
     double max_time=0;
     double acum=0;
     int test=0;
-    LL::Chronometer time_collision;
-    std::vector<float> tiempos;
+    std::list<std::pair<float,float>> tiempos;
     while(!input.get_display_status() && test!=max_test)
     {
         ++total_frames;
@@ -308,21 +251,22 @@ int main(int argc,char* argv[])
             collision_list.clear();
             for(unsigned int i=0;i<scene.size();++i)
                 on_collision[i]=0;
-            time_collision.play();
-            collision_function(scene.get_objects(),on_collision,collision_list);
-            time_collision.stop();
-            tiempos.push_back(time_collision.get_time());
+            float time_construction;
+            float time_collision;
+            collision_function(scene.get_objects(),on_collision,collision_list,&time_construction,&time_collision);
+            float total_time=time_construction+time_collision;
+            tiempos.push_back(std::pair<float,float>(time_construction,time_collision));
             total_test_text=LL::to_string(++test);
-            collision_text=LL::to_string(time_collision.get_time())+" s";
-            acum+=time_collision.get_time();
-            if(min_time>time_collision.get_time())
+            collision_text=LL::to_string(total_time)+" s";
+            acum+=total_time;
+            if(min_time>total_time)
             {
-                min_time=time_collision.get_time();
+                min_time=total_time;
                 min_time_text=LL::to_string(min_time)+" s";
             }
-            if(max_time<time_collision.get_time())
+            if(max_time<total_time)
             {
-                max_time=time_collision.get_time();
+                max_time=total_time;
                 max_time_text=LL::to_string(max_time)+" s";
             }
             prom_time_text=LL::to_string(acum/test)+" s";
@@ -359,5 +303,20 @@ int main(int argc,char* argv[])
         std::cout<<"_________________________________________________"<<std::endl;
         std::cout<<std::endl;
     }
+    LL::FileStream txt_times;
+    std::string path_name=name_function+" (S="+LL::to_string(scene.size())+").csv";
+    txt_times.set_path(path_name);
+    txt_times.load();
+    txt_times.clear_file();
+    txt_times.insert_line(0,tiempos.size());
+    unsigned int index=0;
+    for(auto tiempo:tiempos)
+    {
+        txt_times[index]=LL::to_string(tiempo.first)+";"+LL::to_string(tiempo.second)+";";
+        std::replace(txt_times[index].begin(),txt_times[index].end(),'.',',');
+        ++index;
+    }
+    std::cout<<"Saving: "<<path_name<<std::endl;
+    txt_times.save();
     return 0;
 }

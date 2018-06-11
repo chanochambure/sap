@@ -16,8 +16,11 @@ LL_MathStructure::MBB pair_to_mbb(Interval interval)
 
 void SAP_RTree1D(std::vector<Object>& objects,
                  std::vector<int>& total_collision,
-                 std::list<std::pair<int,int>>& collision)
+                 std::list<std::pair<int,int>>& collision,
+                 float* time_construction,float* time_collision)
 {
+    LL::Chronometer chronometer;
+    chronometer.play();
     int n=objects.size();
     int n_2=objects.size()*2;
     std::vector<MinMaxPoint> points(n_2);
@@ -31,6 +34,10 @@ void SAP_RTree1D(std::vector<Object>& objects,
     for(int i=0;i<n_2;++i)
         R[iX[i]]=i;
     std::vector<int> iY=LSDRS(points,compare_y_points);
+    chronometer.stop();
+    if(time_construction)
+        *time_construction=chronometer.get_time();
+    chronometer.play();
     LL_DataStructure::RTree<Interval,1,5> S(pair_to_mbb);
     for(int i=0;i<n_2;++i)
     {
@@ -65,6 +72,9 @@ void SAP_RTree1D(std::vector<Object>& objects,
             S.remove(intervalo);
         }
     }
+    chronometer.stop();
+    if(time_collision)
+        *time_collision=chronometer.get_time();
 }
 
 #endif // RTREE1D_H_INCLUDED

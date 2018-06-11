@@ -16,11 +16,18 @@ LL_MathStructure::MBB object_to_mbb(Object object)
 
 void RTree2D(std::vector<Object>& objects,
              std::vector<int>& total_collision,
-             std::list<std::pair<int,int>>& collision)
+             std::list<std::pair<int,int>>& collision,
+             float* time_construction,float* time_collision)
 {
+    LL::Chronometer chronometer;
+    chronometer.play();
     LL_DataStructure::RTree<Object,2,5> S(object_to_mbb);
     for(unsigned int i=0;i<objects.size();++i)
         S.insert(objects[i]);
+    chronometer.stop();
+    if(time_construction)
+        *time_construction=chronometer.get_time();
+    chronometer.play();
     for(unsigned int i=0;i<objects.size();++i)
     {
         S.remove(objects[i]);
@@ -39,6 +46,9 @@ void RTree2D(std::vector<Object>& objects,
             }
         }
     }
+    chronometer.stop();
+    if(time_collision)
+        *time_collision=chronometer.get_time();
 }
 
 #endif // RTREE2D_H_INCLUDED
