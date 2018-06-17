@@ -1,23 +1,36 @@
-#ifndef SAP_RTREE1D_H_INCLUDED
-#define SAP_RTREE1D_H_INCLUDED
+#ifndef SAP_RSTARTREE1D_H_INCLUDED
+#define SAP_RSTARTREE1D_H_INCLUDED
 
-#include <LexRisLogic/DataStructures/RTree.h>
 
-#include "Object.h"
+typedef RStarTree<Interval, 1, 2, 5> RStarTree_SAP;
 
-LL_MathStructure::MBB pair_to_mbb(Interval interval)
+RStarTree_SAP::BoundingBox object_to_star_mbb_1D(Interval interval)
 {
-    LL_MathStructure::MBB mbb;
-    mbb.set_dimension(1);
-    mbb.first_point[0]=interval.first;
-    mbb.second_point[0]=interval.second;
+    RStarTree_SAP::BoundingBox mbb;
+	mbb.edges[0].first  = interval.first;
+	mbb.edges[0].second = interval.second;
     return mbb;
 }
 
-void SAP_RTree1D(std::vector<Object>& objects,
-                 std::vector<int>& total_collision,
-                 std::list<std::pair<int,int>>& collision,
-                 float* time_construction,float* time_collision)
+struct IntervalVisitor
+{
+	int count;
+	bool ContinueVisiting;
+	std::list<Interval> result;
+
+	IntervalVisitor() : count(0), ContinueVisiting(true) {};
+
+	void operator()(const RStarTree_SAP::Leaf* const leaf)
+	{
+	    result.push_back(leaf->leaf);
+	}
+};
+
+
+void SAP_RStarTree1D(std::vector<Object>& objects,
+                     std::vector<int>& total_collision,
+                     std::list<std::pair<int,int>>& collision,
+                     float* time_construction,float* time_collision)
 {
     LL::Chronometer chronometer;
     chronometer.play();
@@ -38,7 +51,8 @@ void SAP_RTree1D(std::vector<Object>& objects,
     if(time_construction)
         *time_construction=chronometer.get_time();
     chronometer.play();
-    LL_DataStructure::RTree<Interval,1,5> S(pair_to_mbb);
+    RStarTree_SAP S;
+    IntervalVisitor visitor;
     for(int i=0;i<n_2;++i)
     {
         int p=iY[i];
@@ -49,8 +63,8 @@ void SAP_RTree1D(std::vector<Object>& objects,
             if(mini>maxi)
                 std::swap(mini,maxi);
             Interval intervalo(mini,maxi);
-            std::list<Interval> result=S.range_query(pair_to_mbb(intervalo));
-            for(auto d=result.begin();d!=result.end();++d)
+            visitor=S.Query(RStarTree_SAP::AcceptOverlapping(object_to_star_mbb_1D(intervalo)),IntervalVisitor());
+            for(auto d=visitor.result.begin();d!=visitor.result.end();++d)
             {
                 int index_i=p;
                 int index_j=iX[(d->first)]%n;
@@ -60,7 +74,7 @@ void SAP_RTree1D(std::vector<Object>& objects,
                 ++total_collision[index_j];
                 collision.push_back(std::pair<int,int>(index_i,index_j));
             }
-            S.insert(intervalo);
+            S.Insert(intervalo, object_to_star_mbb_1D(intervalo));
         }
         else
         {
@@ -69,7 +83,7 @@ void SAP_RTree1D(std::vector<Object>& objects,
             if(mini>maxi)
                 std::swap(mini,maxi);
             Interval intervalo(mini,maxi);
-            S.remove(intervalo);
+            S.RemoveItem(intervalo);
         }
     }
     chronometer.stop();
@@ -77,4 +91,4 @@ void SAP_RTree1D(std::vector<Object>& objects,
         *time_collision=chronometer.get_time();
 }
 
-#endif // SAP_RTREE1D_H_INCLUDED
+#endif // SAP_RSTARTREE1D_H_INCLUDED

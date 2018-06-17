@@ -5,8 +5,10 @@
 #include "Scene.h"
 #include "SAP_RTree1D.h"
 #include "RTree2D.h"
+#include "RStarTree2D.h"
 #include "SAP_Unisize.h"
 #include "SAP_IntervalTree.h"
+#include "SAP_RStarTree1D.h"
 
 int main(int argc,char* argv[])
 {
@@ -62,6 +64,8 @@ int main(int argc,char* argv[])
         scene.create(unisize,total);
         scene.save();
     }
+    if(max_test == 0)
+        return 0;
     std::string name_function;
     void (*collision_function)(
                                std::vector<Object>&,
@@ -96,7 +100,20 @@ int main(int argc,char* argv[])
             collision_function=SAP_IntervalTree;
             break;
         }
-        std::cout<<"Ingresar Funcion:\n1: SAP_RTree1D\n2: RTree2D\n3: SAP_Unisize_Box\n4: SAP_IntervalTree\nOpcion:";
+        else if(mision==5)
+        {
+            name_function="RStarTree 2D";
+            collision_function=RStarTree2D;
+            break;
+        }
+        else if(mision==6)
+        {
+            name_function="SAP RStarTree 1D";
+            collision_function=SAP_RStarTree1D;
+            break;
+        }
+        std::cout<<"Ingresar Funcion:\n1: SAP_RTree1D\n2: RTree2D\n";
+        std::cout<<"3: SAP_Unisize_Box\n4: SAP_IntervalTree\n5: R*Tree2D\n6: SAP_R*Tree1D\nOpcion:";
         std::cin>>mision;
     }
     std::vector<int> on_collision(scene.size(),false);
