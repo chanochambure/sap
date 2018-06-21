@@ -206,9 +206,30 @@ int main(int argc,char* argv[])
         {
             for(unsigned int i=0;i<scene.size();++i)
             {
-                color.red   =(on_collision[i]*11)%255;
-                color.green =(on_collision[i]*41)%255;
-                color.blue  =(on_collision[i]*73)%255;
+                switch(on_collision[i])
+                {
+                    case 1:
+                    {
+                        color.red   = 0;
+                        color.green = 0;
+                        color.blue  = 255;
+                        break;
+                    }
+                    case 0:
+                    {
+                        color.red   = 0;
+                        color.green = 0;
+                        color.blue  = 0;
+                        break;
+                    }
+                    default:
+                    {
+                        color.red   =255;
+                        color.green =0;
+                        color.blue  =0;
+                        break;
+                    }
+                }
                 scene[i].draw_object(&display,green,color);
             }
             for(unsigned int i=0;i<scene.size();++i)
