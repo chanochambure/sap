@@ -10,7 +10,7 @@
 
 #include "Object.h"
 
-const unsigned int SCENE_SIZE_X=800;
+const unsigned int SCENE_SIZE_X=750;
 const unsigned int SCENE_SIZE_Y=450;
 
 class Scene

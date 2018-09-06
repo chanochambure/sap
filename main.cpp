@@ -9,6 +9,7 @@
 #include "SAP_Unisize.h"
 #include "SAP_IntervalTree.h"
 #include "SAP_RStarTree1D.h"
+#include "SAP_LL_IntervalTree.h"
 
 int main(int argc,char* argv[])
 {
@@ -16,7 +17,6 @@ int main(int argc,char* argv[])
     bool collision=false;
     bool render_frames=false;
     bool print_frames=true;
-    bool draw_polygon=false;
     LL::random_generate_new_seed();
     bool create_new_map=false;
     int mision=0;
@@ -112,8 +112,14 @@ int main(int argc,char* argv[])
             collision_function=SAP_RStarTree1D;
             break;
         }
-        std::cout<<"Ingresar Funcion:\n1: SAP_RTree1D\n2: RTree2D\n";
-        std::cout<<"3: SAP_Unisize_Box\n4: SAP_IntervalTree\n5: R*Tree2D\n6: SAP_R*Tree1D\nOpcion:";
+        else if(mision==7)
+        {
+            name_function="SAP LL Interval Tree";
+            collision_function=SAP_LL_IntervalTree;
+            break;
+        }
+        std::cout<<"Ingresar Funcion:\n1: SAP_RTree1D\n2: RTree2D\n3: SAP_Unisize_Box\n";
+        std::cout<<"4: SAP_IntervalTree\n5: R*Tree2D\n6: SAP_R*Tree1D\n7: SAP_LL_IntervalTree\nOpcion:";
         std::cin>>mision;
     }
     std::vector<int> on_collision(scene.size(),false);
