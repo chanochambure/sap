@@ -35,6 +35,7 @@
 *.ico
 *.rc
 *.res
+*.csv
 
 #Directory
 bin/
