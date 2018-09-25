@@ -293,4 +293,40 @@ class Object
         }
 };
 
+struct IndexMinMaxPoint
+{
+    MinMaxPoint point;
+    unsigned int index;
+    IndexMinMaxPoint()
+    {
+    }
+    IndexMinMaxPoint(const MinMaxPoint& point,unsigned int index)
+    {
+        this->point=point;
+        this->index=index;
+    }
+};
+
+bool index_compare_x_points(const IndexMinMaxPoint& first, const IndexMinMaxPoint& second)
+{
+    return first.point.point[0]<second.point.point[0];
+}
+
+bool index_compare_y_points(const IndexMinMaxPoint& first, const IndexMinMaxPoint& second)
+{
+    return first.point.point[1]<second.point.point[1];
+}
+
+struct DataParallelCPU
+{
+    std::list<Object*>** objects;
+    std::vector<int> total_collision;
+    std::list<std::pair<int,int>> collision;
+    int begin_index;
+    int end_index;
+    int max_x;
+    int max_y;
+    int thread_id;
+};
+
 #endif // INCLUDED_OBJECT_H

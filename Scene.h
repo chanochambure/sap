@@ -19,14 +19,6 @@ class Scene
         LL::FileStream _V_file;
         std::vector<Object> _V_objects;
         std::list<Object*>** _V_grid=nullptr;
-        float _V_min_x=0;
-        float _V_min_y=0;
-        float _V_max_x=0;
-        float _V_max_y=0;
-        int _V_ini_x=0;
-        int _V_ini_y=0;
-        float _V_last_division_x=1;
-        float _V_last_division_y=1;
         unsigned int _V_size_x=0;
         unsigned int _V_size_y=0;
         void _F_delete_grid()
@@ -52,29 +44,8 @@ class Scene
             _F_delete_grid();
             if(_V_objects.size())
             {
-                _V_last_division_x=division_x;
-                _V_last_division_y=division_y;
-                LL_MathStructure::MBB object=_V_objects.begin()->get_mbb();
-                _V_min_x=object.first_point[0];
-                _V_min_y=object.first_point[1];
-                _V_max_x=object.second_point[0];
-                _V_max_y=object.second_point[1];
-                for(auto i=_V_objects.begin();i!=_V_objects.end();++i)
-                {
-                    object=i->get_mbb();
-                    if(object.first_point[0]<_V_min_x)
-                        _V_min_x=object.first_point[0];
-                    if(object.second_point[0]>_V_max_x)
-                        _V_max_x=object.second_point[0];
-                    if(object.first_point[1]<_V_min_y)
-                        _V_min_y=object.first_point[1];
-                    if(object.second_point[1]>_V_max_y)
-                        _V_max_y=object.second_point[1];
-                }
-                _V_ini_x=LL::max_integer(_V_min_x/_V_last_division_x);
-                _V_ini_y=LL::max_integer(_V_min_y/_V_last_division_y);
-                _V_size_x=LL::max_integer(_V_max_x/_V_last_division_x)-_V_ini_x+1;
-                _V_size_y=LL::max_integer(_V_max_y/_V_last_division_y)-_V_ini_y+1;
+                _V_size_x=division_x;
+                _V_size_y=division_y;
                 _V_grid=new std::list<Object*>*[_V_size_x];
                 for(unsigned int i=0;i<_V_size_x;++i)
                     _V_grid[i]=new std::list<Object*>[_V_size_y];
@@ -82,16 +53,17 @@ class Scene
                 {
                     Object& obj=(*i);
                     LL_MathStructure::MBB mbb=obj.get_mbb();
-                    int min_px=LL::max_integer(mbb.first_point[0]/_V_last_division_x);
-                    int min_py=LL::max_integer(mbb.first_point[1]/_V_last_division_y);
-                    int max_px=LL::max_integer(mbb.second_point[0]/_V_last_division_x);
-                    int max_py=LL::max_integer(mbb.second_point[1]/_V_last_division_y);
+                    int min_px=LL::max_integer(mbb.first_point[0]/SCENE_SIZE_X);
+                    int min_py=LL::max_integer(mbb.first_point[1]/SCENE_SIZE_Y);
+                    int max_px=LL::max_integer(mbb.second_point[0]/SCENE_SIZE_X);
+                    int max_py=LL::max_integer(mbb.second_point[1]/SCENE_SIZE_Y);
                     for(int x=min_px;x<=max_px;++x)
                     {
                         for(int y=min_py;y<=max_py;++y)
-                            _V_grid[x-_V_ini_x][y-_V_ini_y].push_back(&obj);
+                            _V_grid[x][y].push_back(&obj);
                     }
                 }
+                return true;
             }
             return false;
         }
@@ -140,7 +112,7 @@ class Scene
                         object.add_point(LL::random(0,30),LL::random(0,30));
                 }
                 object.set_id(i);
-                object.set_pos(LL::random(0,SCENE_SIZE_X-30),LL::random(0,SCENE_SIZE_Y-30));
+                object.set_pos(LL::random(0,SCENE_SIZE_X-40),LL::random(0,SCENE_SIZE_Y-40));
                 object.set_text(LL::to_string(i));
                 _V_objects[i]=object;
             }
@@ -181,6 +153,14 @@ class Scene
         std::list<Object*>** get_objects_grid()
         {
             return _V_grid;
+        }
+        unsigned int size_x()
+        {
+            return _V_size_x;
+        }
+        unsigned int size_y()
+        {
+            return _V_size_y;
         }
         ~Scene()
         {

@@ -97,7 +97,10 @@ int main(int argc,char* argv[])
                                std::vector<int>&,
                                std::list<std::pair<int,int>>&,
                                float*,
-                               float*
+                               float*,
+                               int,
+                               float,
+                               float
                                )=nullptr;
     while(1)
     {
@@ -360,7 +363,10 @@ int main(int argc,char* argv[])
                                      on_collision,
                                      collision_list,
                                      &time_construction,
-                                     &time_collision);
+                                     &time_collision,
+                                     threads,
+                                     scene.size_x(),
+                                     scene.size_y());
             }
             float total_time=time_construction+time_collision;
             tiempos.push_back(std::pair<float,float>(time_construction,time_collision));

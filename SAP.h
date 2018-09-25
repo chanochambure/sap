@@ -3,30 +3,6 @@
 
 #include "Object.h"
 
-struct IndexMinMaxPoint
-{
-    MinMaxPoint point;
-    unsigned int index;
-    IndexMinMaxPoint()
-    {
-    }
-    IndexMinMaxPoint(const MinMaxPoint& point,unsigned int index)
-    {
-        this->point=point;
-        this->index=index;
-    }
-};
-
-bool index_compare_x_points(const IndexMinMaxPoint& first, const IndexMinMaxPoint& second)
-{
-    return first.point.point[0]<second.point.point[0];
-}
-
-bool index_compare_y_points(const IndexMinMaxPoint& first, const IndexMinMaxPoint& second)
-{
-    return first.point.point[1]<second.point.point[1];
-}
-
 void SAP(std::vector<Object>& objects,
          std::vector<int>& total_collision,
          std::list<std::pair<int,int>>& collision,
