@@ -243,6 +243,13 @@ class Object
             minmaxpoint.point[1]+=_V_pos_y;
             return minmaxpoint;
         }
+        LL_MathStructure::MBB get_mbb()
+        {
+            LL_MathStructure::MBB mbb(2);
+            mbb.first_point  = _V_min;
+            mbb.second_point = _V_max;
+            return mbb;
+        }
         void set_font(LL_AL5::Font* font)
         {
             _V_text.set_font(font);

@@ -11,6 +11,7 @@
 #include "SAP_RStarTree1D.h"
 #include "SAP_LL_IntervalTree.h"
 #include "SAP.h"
+#include "SAP_CPU_Parallel.h"
 
 int main(int argc,char* argv[])
 {
@@ -23,19 +24,34 @@ int main(int argc,char* argv[])
     int mision=0;
     int max_test=-1;
     bool command=false;
+    bool command_2=false;
     bool unisize=false;
     int total=-1;
+    int threads=1;
+    int parallel_x=1;
+    int parallel_y=1;
     if(argc >= 5)
     {
         create_new_map=LL::to_int(argv[1]);
         mision=LL::to_int(argv[2]);
         max_test=LL::to_int(argv[3]);
         collision=LL::to_int(argv[4]);
-        if(create_new_map && argc >=7)
+        int counter=5;
+        if(create_new_map)
         {
-            unisize=LL::to_int(argv[5]);
-            total=LL::to_int(argv[6]);
-            command=true;
+            if(argc>counter)
+            {
+                unisize=LL::to_int(argv[counter++]);
+                total=LL::to_int(argv[counter++]);
+                command=true;
+            }
+        }
+        if(argc>counter)
+        {
+            parallel_x=LL::to_int(argv[counter++]);
+            parallel_y=LL::to_int(argv[counter++]);
+            threads=LL::to_int(argv[counter++]);
+            command_2=true;
         }
     }
     else if(argc==1)
@@ -45,7 +61,8 @@ int main(int argc,char* argv[])
     }
     else
     {
-        std::cout<<"SaP <CreateNEW> <ALGORITHM> <TEST> <START> [<UNISIZE> <TOTAL>]"<<std::endl;
+        std::cout<<"SaP <CREATE_NEW_MAP> <ALGORITHM> <TEST> <START> [<UNISIZE> <TOTAL>] ";
+        std::cout<<"[<PARALLEL_X> <PARALLEL_Y> <THREADS>]"<<std::endl;
         return -1;
     }
     Scene scene("scene.txt");
@@ -70,6 +87,13 @@ int main(int argc,char* argv[])
     std::string name_function;
     void (*collision_function)(
                                std::vector<Object>&,
+                               std::vector<int>&,
+                               std::list<std::pair<int,int>>&,
+                               float*,
+                               float*
+                               )=nullptr;
+    void (*collision_function_2)(
+                               std::list<Object*>**,
                                std::vector<int>&,
                                std::list<std::pair<int,int>>&,
                                float*,
@@ -125,9 +149,25 @@ int main(int argc,char* argv[])
             collision_function=SAP;
             break;
         }
+        else if(mision==9)
+        {
+            if(!command_2)
+            {
+                std::cout<<"Parallel X: ";
+                std::cin>>parallel_x;
+                std::cout<<"Parallel Y: ";
+                std::cin>>parallel_y;
+                std::cout<<"Threads: ";
+                std::cin>>threads;
+            }
+            name_function="SAP Parallel";
+            collision_function_2=SAP_CPU_Parallel;
+            scene.build(parallel_x,parallel_y);
+            break;
+        }
         std::cout<<"Ingresar Funcion:\n1: SAP_RTree1D\n2: RTree2D\n3: SAP_Unisize_Box\n";
         std::cout<<"4: SAP_IntervalTree\n5: R*Tree2D\n6: SAP_R*Tree1D\n7: SAP_LL_IntervalTree\n";
-        std::cout<<"8: SAP\n";
+        std::cout<<"8: SAP\n9: SAP CPU Parallel\n";
         std::cout<<"Opcion:";
         std::cin>>mision;
     }
@@ -306,7 +346,22 @@ int main(int argc,char* argv[])
                 on_collision[i]=0;
             float time_construction;
             float time_collision;
-            collision_function(scene.get_objects(),on_collision,collision_list,&time_construction,&time_collision);
+            if(collision_function)
+            {
+                collision_function(scene.get_objects(),
+                                   on_collision,
+                                   collision_list,
+                                   &time_construction,
+                                   &time_collision);
+            }
+            else if(collision_function_2)
+            {
+                collision_function_2(scene.get_objects_grid(),
+                                     on_collision,
+                                     collision_list,
+                                     &time_construction,
+                                     &time_collision);
+            }
             float total_time=time_construction+time_collision;
             tiempos.push_back(std::pair<float,float>(time_construction,time_collision));
             total_test_text=LL::to_string(++test);
