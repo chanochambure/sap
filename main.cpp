@@ -12,6 +12,7 @@
 #include "SAP_LL_IntervalTree.h"
 #include "SAP.h"
 #include "SAP_CPU_Parallel.h"
+#include "SAP_LL_ITREE_Parallel.h"
 
 int main(int argc,char* argv[])
 {
@@ -30,13 +31,15 @@ int main(int argc,char* argv[])
     int threads=1;
     int parallel_x=1;
     int parallel_y=1;
-    if(argc >= 5)
+    bool autosave=true;
+    if(argc >= 6)
     {
         create_new_map=LL::to_int(argv[1]);
         mision=LL::to_int(argv[2]);
         max_test=LL::to_int(argv[3]);
         collision=LL::to_int(argv[4]);
-        int counter=5;
+        autosave=LL::to_int(argv[5]);
+        int counter=6;
         if(create_new_map)
         {
             if(argc>counter)
@@ -58,10 +61,12 @@ int main(int argc,char* argv[])
     {
         std::cout<<"Nuevo Mapa (1/0): ";
         std::cin>>create_new_map;
+        std::cout<<"AutoSave (1/0): ";
+        std::cin>>autosave;
     }
     else
     {
-        std::cout<<"SaP <CREATE_NEW_MAP> <ALGORITHM> <TEST> <START> [<UNISIZE> <TOTAL>] ";
+        std::cout<<"SaP <CREATE_NEW_MAP> <ALGORITHM> <TEST> <START> <AUTOSAVE> [<UNISIZE> <TOTAL>] ";
         std::cout<<"[<PARALLEL_X> <PARALLEL_Y> <THREADS>]"<<std::endl;
         return -1;
     }
@@ -93,7 +98,7 @@ int main(int argc,char* argv[])
                                float*
                                )=nullptr;
     void (*collision_function_2)(
-                               std::list<Object*>**,
+                               std::vector<Object*>**,
                                std::vector<int>&,
                                std::list<std::pair<int,int>>&,
                                float*,
@@ -168,9 +173,25 @@ int main(int argc,char* argv[])
             scene.build(parallel_x,parallel_y);
             break;
         }
+        else if(mision==10)
+        {
+            if(!command_2)
+            {
+                std::cout<<"Parallel X: ";
+                std::cin>>parallel_x;
+                std::cout<<"Parallel Y: ";
+                std::cin>>parallel_y;
+                std::cout<<"Threads: ";
+                std::cin>>threads;
+            }
+            name_function="SAP LL_INtervalTree Parallel";
+            collision_function_2=SAP_LL_ITREE_CPU_Parallel;
+            scene.build(parallel_x,parallel_y);
+            break;
+        }
         std::cout<<"Ingresar Funcion:\n1: SAP_RTree1D\n2: RTree2D\n3: SAP_Unisize_Box\n";
         std::cout<<"4: SAP_IntervalTree\n5: R*Tree2D\n6: SAP_R*Tree1D\n7: SAP_LL_IntervalTree\n";
-        std::cout<<"8: SAP\n9: SAP CPU Parallel\n";
+        std::cout<<"8: SAP\n9: SAP CPU Parallel\n10: SAP LL_IntervalTree CPU Parallel\n";
         std::cout<<"Opcion:";
         std::cin>>mision;
     }
@@ -417,20 +438,23 @@ int main(int argc,char* argv[])
         std::cout<<"_________________________________________________"<<std::endl;
         std::cout<<std::endl;
     }
-    LL::FileStream txt_times;
-    std::string path_name=name_function+" (S="+LL::to_string(scene.size())+").csv";
-    txt_times.set_path(path_name);
-    txt_times.load();
-    txt_times.clear_file();
-    txt_times.insert_line(0,tiempos.size());
-    unsigned int index=0;
-    for(auto tiempo:tiempos)
+    if(autosave)
     {
-        txt_times[index]=LL::to_string(tiempo.first)+";"+LL::to_string(tiempo.second)+";";
-        std::replace(txt_times[index].begin(),txt_times[index].end(),'.',',');
-        ++index;
+        LL::FileStream txt_times;
+        std::string path_name=name_function+" (S="+LL::to_string(scene.size())+").csv";
+        txt_times.set_path(path_name);
+        txt_times.load();
+        txt_times.clear_file();
+        txt_times.insert_line(0,tiempos.size());
+        unsigned int index=0;
+        for(auto tiempo:tiempos)
+        {
+            txt_times[index]=LL::to_string(tiempo.first)+";"+LL::to_string(tiempo.second)+";";
+            std::replace(txt_times[index].begin(),txt_times[index].end(),'.',',');
+            ++index;
+        }
+        std::cout<<"Saving: "<<path_name<<std::endl;
+        txt_times.save();
     }
-    std::cout<<"Saving: "<<path_name<<std::endl;
-    txt_times.save();
     return 0;
 }

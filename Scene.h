@@ -18,7 +18,7 @@ class Scene
     private:
         LL::FileStream _V_file;
         std::vector<Object> _V_objects;
-        std::list<Object*>** _V_grid=nullptr;
+        std::vector<Object*>** _V_grid=nullptr;
         unsigned int _V_size_x=0;
         unsigned int _V_size_y=0;
         void _F_delete_grid()
@@ -46,17 +46,22 @@ class Scene
             {
                 _V_size_x=division_x;
                 _V_size_y=division_y;
-                _V_grid=new std::list<Object*>*[_V_size_x];
+                _V_grid=new std::vector<Object*>*[_V_size_x];
                 for(unsigned int i=0;i<_V_size_x;++i)
-                    _V_grid[i]=new std::list<Object*>[_V_size_y];
+                    _V_grid[i]=new std::vector<Object*>[_V_size_y];
+                float division_size_x=SCENE_SIZE_X/_V_size_x;
+                float division_size_y=SCENE_SIZE_Y/_V_size_y;
                 for(auto i=_V_objects.begin();i!=_V_objects.end();++i)
                 {
                     Object& obj=(*i);
                     LL_MathStructure::MBB mbb=obj.get_mbb();
-                    int min_px=LL::max_integer(mbb.first_point[0]/SCENE_SIZE_X);
-                    int min_py=LL::max_integer(mbb.first_point[1]/SCENE_SIZE_Y);
-                    int max_px=LL::max_integer(mbb.second_point[0]/SCENE_SIZE_X);
-                    int max_py=LL::max_integer(mbb.second_point[1]/SCENE_SIZE_Y);
+                    int min_px=LL::max_integer(mbb.first_point[0]/division_size_x);
+                    int min_py=LL::max_integer(mbb.first_point[1]/division_size_y);
+                    int max_px=LL::max_integer(mbb.second_point[0]/division_size_x);
+                    int max_py=LL::max_integer(mbb.second_point[1]/division_size_y);
+//                    std::cout<<mbb.first_point<<" "<<mbb.second_point<<std::endl;
+//                    std::cout<<min_px<<" "<<max_px<<std::endl;
+//                    std::cout<<min_py<<" "<<max_py<<std::endl;
                     for(int x=min_px;x<=max_px;++x)
                     {
                         for(int y=min_py;y<=max_py;++y)
@@ -150,7 +155,7 @@ class Scene
         {
             return _V_objects;
         }
-        std::list<Object*>** get_objects_grid()
+        std::vector<Object*>** get_objects_grid()
         {
             return _V_grid;
         }

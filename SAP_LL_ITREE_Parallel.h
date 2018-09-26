@@ -1,9 +1,9 @@
-#ifndef SAP_CPU_PARALLEL_H_INCLUDED
-#define SAP_CPU_PARALLEL_H_INCLUDED
+#ifndef SAP_LL_ITREE_PARALLEL_H_INCLUDED
+#define SAP_LL_ITREE_PARALLEL_H_INCLUDED
 
 #include "Object.h"
 
-void* sap_thread_cpu(ALLEGRO_THREAD* thread,void* arg)
+void* sap_ll_itree_thread_cpu(ALLEGRO_THREAD* thread,void* arg)
 {
     DataParallelCPU* data = (DataParallelCPU*)arg;
 //    std::stringstream& th_out=data->streamer;
@@ -20,56 +20,56 @@ void* sap_thread_cpu(ALLEGRO_THREAD* thread,void* arg)
         int y=i/data->max_x;
 //        th_out<<"Data: ("<<x<<"-"<<y<<"): ";
 //        th_out<<" - size: "<<data->objects[x][y].size()<<std::endl;
-        std::list<IndexMinMaxPoint> points;
-        for(Object* object:data->objects[x][y])
+        std::vector<Object*>& objects=data->objects[x][y];
+        int n=objects.size();
+        int n_2=objects.size()*2;
+        std::vector<MinMaxPoint> points(n_2);
+        for(int i=0;i<n;++i)
         {
-            points.push_back(IndexMinMaxPoint(object->get_point(MinMaxType::T_MIN),object->get_id()));
-            points.push_back(IndexMinMaxPoint(object->get_point(MinMaxType::T_MAX),object->get_id()));
+            points[i]=objects[i]->get_point(MinMaxType::T_MIN);
+            points[i+n]=objects[i]->get_point(MinMaxType::T_MAX);
         }
-        points.sort(index_compare_x_points);
-        std::set<unsigned int> indexes;
-        std::set<LL_MathStructure::Interval> answer_x;
-        for(IndexMinMaxPoint& point:points)
+        std::vector<int> R(n_2);
+        std::vector<int> iX=LSDRS(points,compare_x_points);
+        for(int i=0;i<n_2;++i)
+            R[iX[i]]=i;
+        std::vector<int> iY=LSDRS(points,compare_y_points);
+        LL_DataStructure::IntervalTree S;
+        for(int i=0;i<n_2;++i)
         {
-            if(point.point.type == MinMaxType::T_MIN)
+            int p=iY[i];
+            if(p<n)
             {
-                for(unsigned int index:indexes)
-                    answer_x.insert(LL_MathStructure::Interval(point.index,index));
-                indexes.insert(point.index);
-            }
-            else
-                indexes.erase(point.index);
-        }
-        points.sort(index_compare_y_points);
-        indexes.clear();
-        for(IndexMinMaxPoint& point:points)
-        {
-            if(point.point.type == MinMaxType::T_MIN)
-            {
-                for(unsigned int index:indexes)
+                LL_MathStructure::Interval intervalo(R[p],R[p+n]);
+                auto result=S.range_query(intervalo);
+                for(auto d=result.begin();d!=result.end();++d)
                 {
-                    if(answer_x.find(LL_MathStructure::Interval(point.index,index)) != answer_x.end())
-                    {
-                        data->total_collision[point.index]+=1;
-                        data->total_collision[index]+=1;
-                        data->collision.push_back(std::pair<int,int>(point.index,index));
-                    }
+                    int index_i=objects[p]->get_id();
+                    int index_j=objects[iX[((*d)[0])]%n]->get_id();
+                    if(index_i>index_j)
+                        std::swap(index_i,index_j);
+                    data->total_collision[index_i]+=1;
+                    data->total_collision[index_j]+=1;
+                    data->collision.push_back(std::pair<int,int>(index_i,index_j));
                 }
-                indexes.insert(point.index);
+                S.insert(intervalo);
             }
             else
-                indexes.erase(point.index);
+            {
+                LL_MathStructure::Interval intervalo(R[p-n],R[p]);
+                S.remove(intervalo);
+            }
         }
     }
     //END
     return nullptr;
 }
 
-void SAP_CPU_Parallel(std::vector<Object*>** objects,
-                      std::vector<int>& total_collision,
-                      std::list<std::pair<int,int>>& collision,
-                      float* time_construction,float* time_collision,
-                      int threads,float size_x,float size_y)
+void SAP_LL_ITREE_CPU_Parallel(std::vector<Object*>** objects,
+                               std::vector<int>& total_collision,
+                               std::list<std::pair<int,int>>& collision,
+                               float* time_construction,float* time_collision,
+                               int threads,float size_x,float size_y)
 {
     LL::Chronometer chronometer;
     chronometer.play();
@@ -88,7 +88,7 @@ void SAP_CPU_Parallel(std::vector<Object*>** objects,
         tdata.max_x=size_x;
         tdata.max_y=size_y;
         tdata.thread_id=i;
-        thread_list.push_back(al_create_thread(sap_thread_cpu, data[i]));
+        thread_list.push_back(al_create_thread(sap_ll_itree_thread_cpu, data[i]));
     }
     //Construction END
     chronometer.stop();
@@ -118,4 +118,4 @@ void SAP_CPU_Parallel(std::vector<Object*>** objects,
         al_destroy_thread(thread_i);
 }
 
-#endif // SAP_CPU_PARALLEL_H_INCLUDED
+#endif // SAP_LL_ITREE_PARALLEL_H_INCLUDED

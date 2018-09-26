@@ -7,6 +7,7 @@
 #include <set>
 #include <queue>
 #include <algorithm>
+#include <sstream>
 
 #include <LexRisLogic/Allegro5/Allegro5.h>
 #include <LexRisLogic/Allegro5/Display.h>
@@ -248,6 +249,10 @@ class Object
             LL_MathStructure::MBB mbb(2);
             mbb.first_point  = _V_min;
             mbb.second_point = _V_max;
+            mbb.first_point[0] += _V_pos_x;
+            mbb.second_point[0] += _V_pos_x;
+            mbb.first_point[1] += _V_pos_y;
+            mbb.second_point[1] += _V_pos_y;
             return mbb;
         }
         void set_font(LL_AL5::Font* font)
@@ -319,7 +324,7 @@ bool index_compare_y_points(const IndexMinMaxPoint& first, const IndexMinMaxPoin
 
 struct DataParallelCPU
 {
-    std::list<Object*>** objects;
+    std::vector<Object*>** objects;
     std::vector<int> total_collision;
     std::list<std::pair<int,int>> collision;
     int begin_index;
@@ -327,6 +332,7 @@ struct DataParallelCPU
     int max_x;
     int max_y;
     int thread_id;
+    std::stringstream streamer;
 };
 
 #endif // INCLUDED_OBJECT_H
