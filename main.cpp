@@ -13,6 +13,7 @@
 #include "SAP.h"
 #include "SAP_CPU_Parallel.h"
 #include "SAP_LL_ITREE_Parallel.h"
+#include "SAP_GPU_Parallel.h"
 
 int main(int argc,char* argv[])
 {
@@ -107,6 +108,18 @@ int main(int argc,char* argv[])
                                float,
                                float
                                )=nullptr;
+    void (*collision_function_3)(
+                               float*,
+                               int*,
+                               unsigned int,
+                               std::vector<int>&,
+                               std::list<std::pair<int,int>>&,
+                               float*,
+                               float*,
+                               int,
+                               unsigned int,
+                               unsigned int
+                               )=nullptr;
     while(1)
     {
         if(mision==1)
@@ -189,9 +202,27 @@ int main(int argc,char* argv[])
             scene.build(parallel_x,parallel_y);
             break;
         }
+        else if(mision==11)
+        {
+            if(!command_2)
+            {
+                std::cout<<"Parallel X: ";
+                std::cin>>parallel_x;
+                std::cout<<"Parallel Y: ";
+                std::cin>>parallel_y;
+                std::cout<<"Threads: ";
+                std::cin>>threads;
+            }
+            name_function="SAP GPU Parallel";
+            build_sap_gpu_parallel();
+            collision_function_3=SAP_GPU_Parallel;
+            scene.build_gpu(parallel_x,parallel_y);
+            break;
+        }
         std::cout<<"Ingresar Funcion:\n1: SAP_RTree1D\n2: RTree2D\n3: SAP_Unisize_Box\n";
         std::cout<<"4: SAP_IntervalTree\n5: R*Tree2D\n6: SAP_R*Tree1D\n7: SAP_LL_IntervalTree\n";
         std::cout<<"8: SAP\n9: SAP CPU Parallel\n10: SAP LL_IntervalTree CPU Parallel\n";
+        std::cout<<"11: SAP GPU Parallel\n12: SAP LL_IntervalTree GPU Parallel\n";
         std::cout<<"Opcion:";
         std::cin>>mision;
     }
@@ -389,6 +420,19 @@ int main(int argc,char* argv[])
                                      scene.size_x(),
                                      scene.size_y());
             }
+            else if(collision_function_3)
+            {
+                collision_function_3(scene.get_objects_gpu_grid(),
+                                     scene.get_sizes_gpu_grid(),
+                                     scene.size(),
+                                     on_collision,
+                                     collision_list,
+                                     &time_construction,
+                                     &time_collision,
+                                     threads,
+                                     scene.size_x(),
+                                     scene.size_y());
+            }
             float total_time=time_construction+time_collision;
             tiempos.push_back(std::pair<float,float>(time_construction,time_collision));
             total_test_text=LL::to_string(++test);
@@ -456,5 +500,6 @@ int main(int argc,char* argv[])
         std::cout<<"Saving: "<<path_name<<std::endl;
         txt_times.save();
     }
+    delete_sap_gpu_parallel();
     return 0;
 }

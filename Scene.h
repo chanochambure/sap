@@ -19,6 +19,8 @@ class Scene
         LL::FileStream _V_file;
         std::vector<Object> _V_objects;
         std::vector<Object*>** _V_grid=nullptr;
+        float* _V_grid_gpu=nullptr;
+        int* _V_sizes_grid_gpu=nullptr;
         unsigned int _V_size_x=0;
         unsigned int _V_size_y=0;
         void _F_delete_grid()
@@ -34,10 +36,57 @@ class Scene
             }
             _V_grid=nullptr;
         }
+        void _F_delete_gpu_grid()
+        {
+            if(_V_grid_gpu)
+                delete[](_V_grid_gpu);
+            _V_grid_gpu=nullptr;
+            if(_V_sizes_grid_gpu)
+                delete[](_V_sizes_grid_gpu);
+            _V_sizes_grid_gpu=nullptr;
+        }
     public:
         Scene(std::string file_path)
         {
             _V_file.set_path(file_path);
+        }
+        bool build_gpu(int division_x,int division_y)
+        {
+            _F_delete_gpu_grid();
+            if(_V_objects.size())
+            {
+                build(division_x,division_y);
+                unsigned int total_memory=0;
+                _V_sizes_grid_gpu=new int[_V_size_x*_V_size_y];
+                for(unsigned int i=0;i<_V_size_x;++i)
+                {
+                    for(unsigned int j=0;j<_V_size_y;++j)
+                    {
+                        total_memory+=_V_grid[i][j].size();
+                        _V_sizes_grid_gpu[i*_V_size_y+j]=_V_grid[i][j].size();
+                    }
+                }
+                _V_grid_gpu=new float[total_memory*5];
+                int counter=0;
+                for(unsigned int i=0;i<_V_size_x;++i)
+                {
+                    for(unsigned int j=0;j<_V_size_y;++j)
+                    {
+                        for(Object* object:_V_grid[i][j])
+                        {
+                            LL_MathStructure::MBB mbb=object->get_mbb();
+                            _V_grid_gpu[counter*5+0]=object->get_id();
+                            _V_grid_gpu[counter*5+1]=mbb.first_point[0];
+                            _V_grid_gpu[counter*5+2]=mbb.second_point[0];
+                            _V_grid_gpu[counter*5+3]=mbb.first_point[1];
+                            _V_grid_gpu[counter*5+4]=mbb.second_point[1];
+                            counter++;
+                        }
+                    }
+                }
+                return true;
+            }
+            return false;
         }
         bool build(int division_x,int division_y)
         {
@@ -159,6 +208,14 @@ class Scene
         {
             return _V_grid;
         }
+        float* get_objects_gpu_grid()
+        {
+            return _V_grid_gpu;
+        }
+        int* get_sizes_gpu_grid()
+        {
+            return _V_sizes_grid_gpu;
+        }
         unsigned int size_x()
         {
             return _V_size_x;
@@ -170,6 +227,7 @@ class Scene
         ~Scene()
         {
             _F_delete_grid();
+            _F_delete_gpu_grid();
             clear();
         }
 };
