@@ -13,6 +13,14 @@
 const unsigned int SCENE_SIZE_X=750;
 const unsigned int SCENE_SIZE_Y=450;
 
+bool replace(std::string& str, const std::string& from, const std::string& to) {
+    size_t start_pos = str.find(from);
+    if(start_pos == std::string::npos)
+        return false;
+    str.replace(start_pos, from.length(), to);
+    return true;
+}
+
 class Scene
 {
     private:
@@ -87,6 +95,16 @@ class Scene
                 return true;
             }
             return false;
+        }
+        int get_local_size()
+        {
+            int local_size=0;
+            for(unsigned int i=0;i<_V_size_x*_V_size_y;++i)
+            {
+                if(local_size<_V_sizes_grid_gpu[i])
+                    local_size=_V_sizes_grid_gpu[i];
+            }
+            return local_size;
         }
         bool build(int division_x,int division_y)
         {

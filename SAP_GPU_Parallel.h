@@ -13,15 +13,20 @@ cl_command_queue sap_gpu_commands;
 cl_program sap_gpu_program;
 cl_kernel sap_gpu_kernel;
 
-void build_sap_gpu_parallel()
+void build_sap_gpu_parallel(int local_size)
 {
+    //LOAD FILE .c
     LL::FileStream file;
     file.set_path("SAP_GPU_Parallel.c");
     if(file.load())
     {
         for(unsigned int i=0;i<file.size();++i)
             sap_gpu_kernel_program+=file[i]+"\n";
+        replace(sap_gpu_kernel_program,"VAR1",LL::to_string(local_size*2));
+        replace(sap_gpu_kernel_program,"VAR2",LL::to_string(local_size*local_size));
+        replace(sap_gpu_kernel_program,"VAR3",LL::to_string(local_size));
     }
+    //GPU CONF
     int err;
     const char* kernel_c_str=sap_gpu_kernel_program.c_str();
     cl_platform_id sap_gpu_platform_temp[2];
@@ -107,6 +112,10 @@ void SAP_GPU_Parallel(float* objects,
     LL::Chronometer chronometer;
     chronometer.play();
     //Construction BEGIN
+    int max_outputs = total_objects * total_objects;
+    char* results=new char[max_outputs];
+    for(int i=0;i<max_outputs;++i)
+        results[i]=0;
     int err;
     cl_mem input_buffer;
     cl_mem ref_buffer;
@@ -123,31 +132,20 @@ void SAP_GPU_Parallel(float* objects,
         printf("Couldn't create input buffer");
         return;
     }
-    int max_outputs = total_objects * total_objects;
-    output_buffer= clCreateBuffer(sap_gpu_context, CL_MEM_READ_WRITE , max_outputs * sizeof(char), NULL, &err);
+    output_buffer= clCreateBuffer(sap_gpu_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR , max_outputs * sizeof(char), results, &err);
     if(err < 0)
     {
         printf("Couldn't create output buffer");
         return;
     }
-    int local_size=0;
-    for(unsigned int i=0;i<size_x*size_y;++i)
-    {
-        if(local_size<total_sizes[i])
-            local_size=total_sizes[i];
-    }
-    int max_local_ouputs = local_size * local_size;
     unsigned int total_per_thread=std::ceil(1.0*size_x*size_y/threads);
     err = clSetKernelArg(sap_gpu_kernel, 0, sizeof(cl_mem), &input_buffer);
     err |= clSetKernelArg(sap_gpu_kernel, 1, sizeof(cl_mem), &ref_buffer);
     err |= clSetKernelArg(sap_gpu_kernel, 2, sizeof(cl_mem), &output_buffer);
-    err |= clSetKernelArg(sap_gpu_kernel, 3, local_size*2*sizeof(unsigned int), NULL);
-    err |= clSetKernelArg(sap_gpu_kernel, 4, max_local_ouputs*sizeof(char), NULL);
-    err |= clSetKernelArg(sap_gpu_kernel, 5, local_size*sizeof(char), NULL);
-    err |= clSetKernelArg(sap_gpu_kernel, 6, sizeof(unsigned int), &size_x);
-    err |= clSetKernelArg(sap_gpu_kernel, 7, sizeof(unsigned int), &size_y);
-    err |= clSetKernelArg(sap_gpu_kernel, 8, sizeof(unsigned int), &total_per_thread);
-    err |= clSetKernelArg(sap_gpu_kernel, 9, sizeof(unsigned int), &total_objects);
+    err |= clSetKernelArg(sap_gpu_kernel, 3, sizeof(unsigned int), &size_x);
+    err |= clSetKernelArg(sap_gpu_kernel, 4, sizeof(unsigned int), &size_y);
+    err |= clSetKernelArg(sap_gpu_kernel, 5, sizeof(unsigned int), &total_per_thread);
+    err |= clSetKernelArg(sap_gpu_kernel, 6, sizeof(unsigned int), &total_objects);
     if(err < 0)
     {
         printf("Couldn't create a kernel argument");
@@ -168,7 +166,6 @@ void SAP_GPU_Parallel(float* objects,
         std::cout<<err<<std::endl;
         return;
     }
-    char* results=new char[max_outputs];
     clFinish(sap_gpu_commands);
     err = clEnqueueReadBuffer(sap_gpu_commands,output_buffer,CL_TRUE,0,sizeof(char)*max_outputs,results,0,NULL,NULL);
     if (err != CL_SUCCESS)
