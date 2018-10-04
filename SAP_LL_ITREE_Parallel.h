@@ -16,48 +16,51 @@ void* sap_ll_itree_thread_cpu(ALLEGRO_THREAD* thread,void* arg)
 //    th_out<<"Checked Data"<<std::endl;
     for(int i=data->begin_index;i<data->end_index and i<max_data;++i)
     {
-        int x=i%data->max_x;
-        int y=i/data->max_x;
+        int x=i/data->max_y;
+        int y=i%data->max_y;
 //        th_out<<"Data: ("<<x<<"-"<<y<<"): ";
 //        th_out<<" - size: "<<data->objects[x][y].size()<<std::endl;
         std::vector<Object*>& objects=data->objects[x][y];
         int n=objects.size();
-        int n_2=objects.size()*2;
-        std::vector<MinMaxPoint> points(n_2);
-        for(int i=0;i<n;++i)
+        if(n)
         {
-            points[i]=objects[i]->get_point(MinMaxType::T_MIN);
-            points[i+n]=objects[i]->get_point(MinMaxType::T_MAX);
-        }
-        std::vector<int> R(n_2);
-        std::vector<int> iX=LSDRS(points,compare_x_points);
-        for(int i=0;i<n_2;++i)
-            R[iX[i]]=i;
-        std::vector<int> iY=LSDRS(points,compare_y_points);
-        LL_DataStructure::IntervalTree S;
-        for(int i=0;i<n_2;++i)
-        {
-            int p=iY[i];
-            if(p<n)
+            int n_2=objects.size()*2;
+            std::vector<MinMaxPoint> points(n_2);
+            for(int i=0;i<n;++i)
             {
-                LL_MathStructure::Interval intervalo(R[p],R[p+n]);
-                auto result=S.range_query(intervalo);
-                for(auto d=result.begin();d!=result.end();++d)
-                {
-                    int index_i=objects[p]->get_id();
-                    int index_j=objects[iX[((*d)[0])]%n]->get_id();
-                    if(index_i>index_j)
-                        std::swap(index_i,index_j);
-                    data->total_collision[index_i]+=1;
-                    data->total_collision[index_j]+=1;
-                    data->collision.push_back(std::pair<int,int>(index_i,index_j));
-                }
-                S.insert(intervalo);
+                points[i]=objects[i]->get_point(MinMaxType::T_MIN);
+                points[i+n]=objects[i]->get_point(MinMaxType::T_MAX);
             }
-            else
+            std::vector<int> R(n_2);
+            std::vector<int> iX=LSDRS(points,compare_x_points);
+            for(int i=0;i<n_2;++i)
+                R[iX[i]]=i;
+            std::vector<int> iY=LSDRS(points,compare_y_points);
+            LL_DataStructure::IntervalTree S;
+            for(int i=0;i<n_2;++i)
             {
-                LL_MathStructure::Interval intervalo(R[p-n],R[p]);
-                S.remove(intervalo);
+                int p=iY[i];
+                if(p<n)
+                {
+                    LL_MathStructure::Interval intervalo(R[p],R[p+n]);
+                    auto result=S.range_query(intervalo);
+                    for(auto d=result.begin();d!=result.end();++d)
+                    {
+                        int index_i=objects[p]->get_id();
+                        int index_j=objects[iX[((*d)[0])]%n]->get_id();
+                        if(index_i>index_j)
+                            std::swap(index_i,index_j);
+                        data->total_collision[index_i]+=1;
+                        data->total_collision[index_j]+=1;
+                        data->collision.push_back(std::pair<int,int>(index_i,index_j));
+                    }
+                    S.insert(intervalo);
+                }
+                else
+                {
+                    LL_MathStructure::Interval intervalo(R[p-n],R[p]);
+                    S.remove(intervalo);
+                }
             }
         }
     }

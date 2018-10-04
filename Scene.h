@@ -31,6 +31,7 @@ class Scene
         int* _V_sizes_grid_gpu=nullptr;
         unsigned int _V_size_x=0;
         unsigned int _V_size_y=0;
+        unsigned int _V_size_gpu_grid=0;
         void _F_delete_grid()
         {
             if(_V_grid)
@@ -74,6 +75,7 @@ class Scene
                         _V_sizes_grid_gpu[i*_V_size_y+j]=_V_grid[i][j].size();
                     }
                 }
+                _V_size_gpu_grid=total_memory;
                 _V_grid_gpu=new float[total_memory*5];
                 int counter=0;
                 for(unsigned int i=0;i<_V_size_x;++i)
@@ -105,6 +107,10 @@ class Scene
                     local_size=_V_sizes_grid_gpu[i];
             }
             return local_size;
+        }
+        unsigned int get_size_gpu_grid()
+        {
+            return _V_size_gpu_grid;
         }
         bool build(int division_x,int division_y)
         {
@@ -241,6 +247,25 @@ class Scene
         unsigned int size_y()
         {
             return _V_size_y;
+        }
+        void draw_scene(LL_AL5::Display* display)
+        {
+            if(_V_grid_gpu or _V_grid)
+            {
+                float X_POS=SCENE_SIZE_X/_V_size_x;
+                float Y_POS=SCENE_SIZE_Y/_V_size_y;
+                LL_AL5::Line line;
+                for(unsigned int i=0;i<_V_size_y;++i)
+                {
+                    line.set_points(0,Y_POS*i,SCENE_SIZE_X,Y_POS*i);
+                    display->draw(&line);
+                }
+                for(unsigned int i=0;i<_V_size_x;++i)
+                {
+                    line.set_points(X_POS*i,0,X_POS*i,SCENE_SIZE_Y);
+                    display->draw(&line);
+                }
+            }
         }
         ~Scene()
         {

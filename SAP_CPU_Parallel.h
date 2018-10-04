@@ -16,8 +16,8 @@ void* sap_thread_cpu(ALLEGRO_THREAD* thread,void* arg)
 //    th_out<<"Checked Data"<<std::endl;
     for(int i=data->begin_index;i<data->end_index and i<max_data;++i)
     {
-        int x=i%data->max_x;
-        int y=i/data->max_x;
+        int x=i/data->max_y;
+        int y=i%data->max_y;
 //        th_out<<"Data: ("<<x<<"-"<<y<<"): ";
 //        th_out<<" - size: "<<data->objects[x][y].size()<<std::endl;
         std::list<IndexMinMaxPoint> points;

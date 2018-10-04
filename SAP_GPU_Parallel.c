@@ -1,53 +1,33 @@
-void sort_x(__global float* input,private unsigned int output[], int begin, int size)
+void sort(__constant float* input,unsigned int output[], int begin, int size,bool x_y)
 {
+    int axes=(x_y)?3:1;
     int last=0;
     for(int i=0;i<size;++i)
     {
         for(int a=0;a<2;++a)
         {
             int asignacion=0;
-            int real_id=(begin+i)*5+a+1;
+            int real_id=(begin+i)*5+a+axes;
             for(int j=0;j<last;++j)
             {
-                int real_other_id=output[j];
-                if(input[real_other_id]>input[real_id])
+                int real=output[j];
+                if(input[real]>input[real_id])
+                {
                     break;
+                }
                 ++asignacion;
             }
-            for(int j=last;j>asignacion;--j)
-                output[j]=output[j-1];
+            for(int d=last;d>asignacion;--d)
+            {
+                output[d]=output[d-1];
+            }
             output[asignacion]=real_id;
             ++last;
         }
     }
 }
 
-void sort_y(__global float* input,private unsigned int* output, int begin, int size)
-{
-    int last=0;
-    for(int i=0;i<size;++i)
-    {
-        for(int a=0;a<2;++a)
-        {
-            int asignacion=0;
-            int real_id=(begin+i)*5+a+3;
-            for(int j=0;j<last;++j)
-            {
-                int real_other_id=output[j];
-                if(input[real_other_id]>input[real_id])
-                    break;
-                ++asignacion;
-            }
-            for(int j=last;j>asignacion;--j)
-                output[j]=output[j-1];
-            output[asignacion]=real_id;
-            ++last;
-        }
-    }
-}
-
-__kernel void sap_gpu_parallel(__global float* objects,__global int* sizes,
-                              __global char* output,
+__kernel void sap_gpu_parallel(__constant float* objects,__constant int* sizes,__global char* output,
                               const unsigned int parallel_x, const unsigned int parallel_y,
                               const unsigned int total_per_thread,unsigned int max_data_elemets)
 {
@@ -59,22 +39,26 @@ __kernel void sap_gpu_parallel(__global float* objects,__global int* sizes,
         return;
     int size_begin_real=0;
     for(int i=0;i<begin_index && i<max_data;++i)
+    {
         size_begin_real+=sizes[i];
-    unsigned int ids[VAR1]; //local_size*2
-    char sub_coll[VAR2];    //local_size*local_size
-    char in_use[VAR3];      //local_size
+    }
+    unsigned int ids[VAR1] = {0};   //local_size*2
+    char sub_coll[VAR2] = {0};      //local_size*local_size
+    char in_use[VAR3] = {0};        //local_size
     for(int i=begin_index;i<end_index && i<max_data;++i)
     {
+        int size_begin_real=0;
+        for(int pp=0;pp<i;++pp)
+            size_begin_real+=sizes[pp];
         if(sizes[i])
         {
             for(int j=0;j<sizes[i];++j)
-                in_use[j]=0;
-            for(int j=0;j<sizes[i];++j)
             {
-                sub_coll[j*2+0]=0;
-                sub_coll[j*2+1]=0;
+                in_use[j]=0;
+                for(int k=0;k<sizes[i];++k)
+                    sub_coll[j*sizes[i]+k]=0;
             }
-            sort_x(objects,ids,size_begin_real,sizes[i]);
+            sort(objects,ids,size_begin_real,sizes[i],false);
             for(int j=0;j<sizes[i]*2;++j)
             {
                 int real_id=ids[j];
@@ -98,7 +82,7 @@ __kernel void sap_gpu_parallel(__global float* objects,__global int* sizes,
             }
             for(int j=0;j<sizes[i];++j)
                 in_use[j]=0;
-            sort_y(objects,ids,size_begin_real,sizes[i]);
+            sort(objects,ids,size_begin_real,sizes[i],true);
             for(int j=0;j<sizes[i]*2;++j)
             {
                 int real_id=ids[j];

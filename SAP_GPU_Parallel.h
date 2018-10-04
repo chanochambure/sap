@@ -107,7 +107,8 @@ void SAP_GPU_Parallel(float* objects,
                       std::vector<int>& total_collision,
                       std::list<std::pair<int,int>>& collision,
                       float* time_construction,float* time_collision,
-                      int threads,unsigned int size_x,unsigned int size_y)
+                      int threads,unsigned int size_x,unsigned int size_y,
+                      unsigned int total_real_objects)
 {
     LL::Chronometer chronometer;
     chronometer.play();
@@ -120,7 +121,7 @@ void SAP_GPU_Parallel(float* objects,
     cl_mem input_buffer;
     cl_mem ref_buffer;
     cl_mem output_buffer;
-    input_buffer = clCreateBuffer(sap_gpu_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, total_objects * 5 * sizeof(float), objects, &err);
+    input_buffer = clCreateBuffer(sap_gpu_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, total_real_objects * 5 * sizeof(float), objects, &err);
     if(err < 0)
     {
         printf("Couldn't create input buffer");
@@ -173,6 +174,9 @@ void SAP_GPU_Parallel(float* objects,
         printf("Error: Failed to read output array! %d\n", err);
         return;
     }
+//    for(unsigned int i=0;i<16;++i)
+//        std::cout<<int(results[i])<<std::endl;
+//    std::cout<<std::endl;
     for(int i=0;i<max_outputs;++i)
     {
         if(results[i])
