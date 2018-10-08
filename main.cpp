@@ -217,7 +217,7 @@ int main(int argc,char* argv[])
             name_function="SAP GPU Parallel";
             collision_function_3=SAP_GPU_Parallel;
             scene.build_gpu(parallel_x,parallel_y);
-            build_sap_gpu_parallel(scene.get_local_size());
+            build_sap_gpu_parallel(scene.get_local_size(),scene.size());
             break;
         }
         std::cout<<"Ingresar Funcion:\n1: SAP_RTree1D\n2: RTree2D\n3: SAP_Unisize_Box\n";
