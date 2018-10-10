@@ -119,6 +119,7 @@ int main(int argc,char* argv[])
                                int,
                                unsigned int,
                                unsigned int,
+                               unsigned int,
                                unsigned int
                                )=nullptr;
     while(1)
@@ -434,7 +435,8 @@ int main(int argc,char* argv[])
                                      threads,
                                      scene.size_x(),
                                      scene.size_y(),
-                                     scene.get_size_gpu_grid());
+                                     scene.get_size_gpu_grid(),
+                                     scene.get_local_size());
             }
             float total_time=time_construction+time_collision;
             tiempos.push_back(std::pair<float,float>(time_construction,time_collision));

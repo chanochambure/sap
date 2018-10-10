@@ -1,4 +1,4 @@
-void sort(__constant float* input,unsigned int output[], int begin, int size,bool x_y)
+void sort(__global float* input,unsigned int output[], int begin, int size,bool x_y)
 {
     int axes=(x_y)?3:1;
     int last=0;
@@ -44,7 +44,8 @@ unsigned int get_id(unsigned int i,unsigned int j,unsigned int size)
     }
 }
 
-__kernel void sap_gpu_parallel(__constant float* objects,__constant int* sizes,__global char* output,
+__kernel void sap_gpu_parallel(__global float* objects,__constant int* sizes,
+                               __global char* output,//__local char* sub_coll,
                               const unsigned int parallel_x, const unsigned int parallel_y,
                               const unsigned int total_per_thread,unsigned int max_data_elemets)
 {
