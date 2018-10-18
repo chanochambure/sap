@@ -251,8 +251,8 @@ int main(int argc,char* argv[])
     key_control.add_key("Print Collision",ALLEGRO_KEY_SPACE);
     key_control.add_key("Controls",ALLEGRO_KEY_L);
 //    std::cout<<"Controls:"<<std::endl;
-//    std::cout<<"Show Polygon: P"<<std::endl;
-//    std::cout<<"Show Frames: F"<<std::endl;
+//    std::cout<<"Show/Hide Polygon: P"<<std::endl;
+//    std::cout<<"Show/Hide Text: F"<<std::endl;
 //    std::cout<<"Render Object: S"<<std::endl;
 //    std::cout<<"Show Controls: L"<<std::endl;
 //    std::cout<<"Make Collision: C"<<std::endl;
@@ -308,6 +308,7 @@ int main(int argc,char* argv[])
     double max_time=0;
     double acum=0;
     int test=0;
+    std::cout<<"Ready"<<std::endl;
     std::list<std::pair<float,float>> tiempos;
     while(!input.get_display_status() && test!=max_test)
     {
@@ -348,13 +349,15 @@ int main(int argc,char* argv[])
                 scene[i].draw_text(&display,black);
         }
         if(print_frames)
+        {
             display.draw(&fps_text,false);
-        display.draw(&total_text,false);
-        display.draw(&collision_text,false);
-        display.draw(&min_time_text,false);
-        display.draw(&max_time_text,false);
-        display.draw(&prom_time_text,false);
-        display.draw(&total_test_text,false);
+            display.draw(&total_text,false);
+            display.draw(&collision_text,false);
+            display.draw(&min_time_text,false);
+            display.draw(&max_time_text,false);
+            display.draw(&prom_time_text,false);
+            display.draw(&total_test_text,false);
+        }
         display.refresh();
         if(input.get_event())
         {
@@ -376,8 +379,8 @@ int main(int argc,char* argv[])
             if(input["Controls"])
             {
                 std::cout<<"Controls:"<<std::endl;
-                std::cout<<"Show Polygon: P"<<std::endl;
-                std::cout<<"Show Frames: F"<<std::endl;
+                std::cout<<"Show/Hide Polygon: P"<<std::endl;
+                std::cout<<"Show/Hide Text: F"<<std::endl;
                 std::cout<<"Render Object: S"<<std::endl;
                 std::cout<<"Show Controls: L"<<std::endl;
                 std::cout<<"Make Collision: C"<<std::endl;

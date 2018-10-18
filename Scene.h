@@ -137,8 +137,14 @@ class Scene
 //                    std::cout<<min_py<<" "<<max_py<<std::endl;
                     for(int x=min_px;x<=max_px;++x)
                     {
-                        for(int y=min_py;y<=max_py;++y)
-                            _V_grid[x][y].push_back(&obj);
+                        if(0<=x and x<_V_size_x)
+                        {
+                            for(int y=min_py;y<=max_py;++y)
+                            {
+                                if(0<=y and y<_V_size_y)
+                                    _V_grid[x][y].push_back(&obj);
+                            }
+                        }
                     }
                 }
                 return true;
