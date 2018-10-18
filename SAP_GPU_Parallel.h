@@ -13,8 +13,11 @@ cl_command_queue sap_gpu_commands;
 cl_program sap_gpu_program;
 cl_kernel sap_gpu_kernel;
 
-void build_sap_gpu_parallel(int local_size)
+char* gpu_results=nullptr;
+
+void build_sap_gpu_parallel(int local_size,unsigned int total_objects)
 {
+    unsigned int max_outputs = (total_objects * (total_objects-1))/2;
     //LOAD FILE .c
     LL::FileStream file;
     file.set_path("SAP_GPU_Parallel.c");
@@ -23,7 +26,7 @@ void build_sap_gpu_parallel(int local_size)
         for(unsigned int i=0;i<file.size();++i)
             sap_gpu_kernel_program+=file[i]+"\n";
         replace(sap_gpu_kernel_program,"VAR1",LL::to_string(local_size*2));
-        replace(sap_gpu_kernel_program,"VAR2",LL::to_string(local_size*local_size));
+        replace(sap_gpu_kernel_program,"VAR2",LL::to_string(local_size*(local_size-1)/2));
         replace(sap_gpu_kernel_program,"VAR3",LL::to_string(local_size));
     }
     //GPU CONF
@@ -88,6 +91,7 @@ void build_sap_gpu_parallel(int local_size)
         printf("Error: Failed to create compute kernel!\n");
         exit(1);
     }
+    gpu_results=new char[max_outputs];
 }
 
 void delete_sap_gpu_parallel()
@@ -99,6 +103,9 @@ void delete_sap_gpu_parallel()
         clReleaseCommandQueue(sap_gpu_commands);
         clReleaseContext(sap_gpu_context);
     }
+    if(gpu_results)
+        delete[](gpu_results);
+    gpu_results=nullptr;
 }
 
 void SAP_GPU_Parallel(float* objects,
@@ -108,15 +115,15 @@ void SAP_GPU_Parallel(float* objects,
                       std::list<std::pair<int,int>>& collision,
                       float* time_construction,float* time_collision,
                       int threads,unsigned int size_x,unsigned int size_y,
-                      unsigned int total_real_objects)
+                      unsigned int total_real_objects,
+                      unsigned int local_size)
 {
     LL::Chronometer chronometer;
     chronometer.play();
     //Construction BEGIN
-    int max_outputs = total_objects * total_objects;
-    char* results=new char[max_outputs];
-    for(int i=0;i<max_outputs;++i)
-        results[i]=0;
+    unsigned int max_outputs = (total_objects * (total_objects-1))/2;
+    for(unsigned int i=0;i<max_outputs;++i)
+        gpu_results[i]=0;
     int err;
     cl_mem input_buffer;
     cl_mem ref_buffer;
@@ -130,10 +137,10 @@ void SAP_GPU_Parallel(float* objects,
     ref_buffer = clCreateBuffer(sap_gpu_context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, size_x*size_y * sizeof(int), total_sizes, &err);
     if(err < 0)
     {
-        printf("Couldn't create input buffer");
+        printf("Couldn't create reference buffer");
         return;
     }
-    output_buffer= clCreateBuffer(sap_gpu_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR , max_outputs * sizeof(char), results, &err);
+    output_buffer= clCreateBuffer(sap_gpu_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR , max_outputs * sizeof(char), gpu_results, &err);
     if(err < 0)
     {
         printf("Couldn't create output buffer");
@@ -143,6 +150,7 @@ void SAP_GPU_Parallel(float* objects,
     err = clSetKernelArg(sap_gpu_kernel, 0, sizeof(cl_mem), &input_buffer);
     err |= clSetKernelArg(sap_gpu_kernel, 1, sizeof(cl_mem), &ref_buffer);
     err |= clSetKernelArg(sap_gpu_kernel, 2, sizeof(cl_mem), &output_buffer);
+//    err |= clSetKernelArg(sap_gpu_kernel, 3, (local_size*(local_size-1)/2) * sizeof(char), NULL);
     err |= clSetKernelArg(sap_gpu_kernel, 3, sizeof(unsigned int), &size_x);
     err |= clSetKernelArg(sap_gpu_kernel, 4, sizeof(unsigned int), &size_y);
     err |= clSetKernelArg(sap_gpu_kernel, 5, sizeof(unsigned int), &total_per_thread);
@@ -168,33 +176,39 @@ void SAP_GPU_Parallel(float* objects,
         return;
     }
     clFinish(sap_gpu_commands);
-    err = clEnqueueReadBuffer(sap_gpu_commands,output_buffer,CL_TRUE,0,sizeof(char)*max_outputs,results,0,NULL,NULL);
+    chronometer.stop();
+    if(time_collision)
+        *time_collision=chronometer.get_time();
+    chronometer.play();
+    err = clEnqueueReadBuffer(sap_gpu_commands,output_buffer,CL_TRUE,0,sizeof(char)*max_outputs,gpu_results,0,NULL,NULL);
     if (err != CL_SUCCESS)
     {
         printf("Error: Failed to read output array! %d\n", err);
         return;
     }
-//    for(unsigned int i=0;i<16;++i)
-//        std::cout<<int(results[i])<<std::endl;
-//    std::cout<<std::endl;
-    for(int i=0;i<max_outputs;++i)
+    unsigned int index_a=total_objects-1;
+    unsigned int index_b=0;
+    for(unsigned int i=0;i<max_outputs;++i)
     {
-        if(results[i])
+        if(gpu_results[i])
         {
-            int index_a=i/total_objects;
-            int index_b=i%total_objects;
             total_collision[index_a]+=1;
             total_collision[index_b]+=1;
             collision.push_back(std::pair<int,int>(index_a,index_b));
+        }
+        ++index_b;
+        if(index_a==index_b)
+        {
+            --index_a;
+            index_b=0;
         }
     }
     //Collision END
     clReleaseMemObject(input_buffer);
     clReleaseMemObject(output_buffer);
-    delete[](results);
     chronometer.stop();
-    if(time_collision)
-        *time_collision=chronometer.get_time();
+    if(time_construction)
+        *time_construction+=chronometer.get_time();
 }
 
 #endif // SAP_GPU_PARALLEL_H_INCLUDED
