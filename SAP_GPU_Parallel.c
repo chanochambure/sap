@@ -65,9 +65,6 @@ __kernel void sap_gpu_parallel(__global float* objects,__constant int* sizes,
     char in_use[VAR3] = {0};        //local_size
     for(int i=begin_index;i<end_index && i<max_data;++i)
     {
-        int size_begin_real=0;
-        for(int pp=0;pp<i;++pp)
-            size_begin_real+=sizes[pp];
         if(sizes[i]>1)
         {
             int limit=sizes[i]*(sizes[i]-1)/2;

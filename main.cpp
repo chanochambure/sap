@@ -14,6 +14,7 @@
 #include "SAP_CPU_Parallel.h"
 #include "SAP_LL_ITREE_Parallel.h"
 #include "SAP_GPU_Parallel.h"
+#include "SAP_GPU_LL_ITree_Parallel.h"
 
 int main(int argc,char* argv[])
 {
@@ -219,6 +220,23 @@ int main(int argc,char* argv[])
             collision_function_3=SAP_GPU_Parallel;
             scene.build_gpu(parallel_x,parallel_y);
             build_sap_gpu_parallel(scene.get_local_size(),scene.size());
+            break;
+        }
+        else if(mision==12)
+        {
+            if(!command_2)
+            {
+                std::cout<<"Parallel X: ";
+                std::cin>>parallel_x;
+                std::cout<<"Parallel Y: ";
+                std::cin>>parallel_y;
+                std::cout<<"Threads: ";
+                std::cin>>threads;
+            }
+            name_function="SAP GPU LL ITREE Parallel";
+            collision_function_3=SAP_GPU_LL_ITree_Parallel;
+            scene.build_gpu(parallel_x,parallel_y);
+            build_sap_gpu_ll_parallel(scene.get_local_size(),scene.size());
             break;
         }
         std::cout<<"Ingresar Funcion:\n1: SAP_RTree1D\n2: RTree2D\n3: SAP_Unisize_Box\n";
@@ -509,5 +527,6 @@ int main(int argc,char* argv[])
         txt_times.save();
     }
     delete_sap_gpu_parallel();
+    delete_sap_gpu_ll_parallel();
     return 0;
 }
