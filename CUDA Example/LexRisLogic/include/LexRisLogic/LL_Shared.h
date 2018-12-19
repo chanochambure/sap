@@ -1,0 +1,6 @@
+#ifndef INCLUDED_LL_SHARED_H
+#define INCLUDED_LL_SHARED_H
+
+#define LL_SHARED
+
+#endif // INCLUDED_LL_SHARED_H
