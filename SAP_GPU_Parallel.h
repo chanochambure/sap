@@ -2,7 +2,7 @@
 #define SAP_GPU_PARALLEL_H_INCLUDED
 
 #include <CL/cl.h>
-#include <LexRisLogic/FileStream.h>
+#include <LexRisLogic/File.h>
 
 std::string sap_gpu_kernel_program;
 //OPENCL
@@ -19,7 +19,7 @@ void build_sap_gpu_parallel(int local_size,unsigned int total_objects)
 {
     unsigned int max_outputs = (total_objects * (total_objects-1))/2;
     //LOAD FILE .c
-    LL::FileStream file;
+    LL::TextFile file;
     file.set_path("SAP_GPU_Parallel.c");
     if(file.load())
     {
@@ -186,6 +186,7 @@ void SAP_GPU_Parallel(float* objects,
         printf("Error: Failed to read output array! %d\n", err);
         return;
     }
+    clFinish(sap_gpu_commands);
     unsigned int index_a=total_objects-1;
     unsigned int index_b=0;
     for(unsigned int i=0;i<max_outputs;++i)

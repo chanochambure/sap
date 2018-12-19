@@ -250,7 +250,8 @@ int main(int argc,char* argv[])
     LL_AL5::init_allegro();
     LL_AL5::primitives_addon();
     LL_AL5::text_addon();
-    LL_AL5::Display display(1366,768,SCENE_SIZE_X,SCENE_SIZE_Y);
+    LL_AL5::input_addon();
+    LL_AL5::Display display(LL_AL5::desktop_size_x,LL_AL5::desktop_size_y,SCENE_SIZE_X,SCENE_SIZE_Y);
     display.set_display_mode(ALLEGRO_FULLSCREEN_WINDOW);
     display.create();
     LL_AL5::Font font;
@@ -262,7 +263,7 @@ int main(int argc,char* argv[])
     another_font.set_size(12.0);
     another_font.load_ttf_font();
     scene.set_font(&font);
-    LL_AL5::KeyControl key_control;
+    LL_AL5::KeyController key_control;
     key_control.add_key("Polygon",ALLEGRO_KEY_P);
     key_control.add_key("Frames",ALLEGRO_KEY_F);
     key_control.add_key("Render",ALLEGRO_KEY_S);
@@ -282,9 +283,10 @@ int main(int argc,char* argv[])
     std::list<std::pair<int,int>> collision_list;
     time.play();
     LL_AL5::Input input;
+    input.create();
     input.register_display(display);
     input.keyboard_on();
-    input.set_key_control(&key_control);
+    input.set_key_controller(&key_control);
     LL_AL5::Color black;
     LL_AL5::Color green(0,255);
     LL_AL5::Color color;
@@ -380,22 +382,22 @@ int main(int argc,char* argv[])
         display.refresh();
         if(input.get_event())
         {
-            if(input["Collision"])
+            if(key_control.get_key_status("Collision"))
             {
                 collision=!collision;
-                input["Collision"]=false;
+                key_control.get_key_status("Collision")=false;
             }
-            if(input["Print Collision"])
+            if(key_control.get_key_status("Print Collision"))
             {
                 print_collision=!print_collision;
-                input["Print Collision"]=false;
+                key_control.get_key_status("Print Collision")=false;
             }
-            if(input["Polygon"])
+            if(key_control.get_key_status("Polygon"))
             {
                 draw_polygon=!draw_polygon;
-                input["Polygon"]=false;
+                key_control.get_key_status("Polygon")=false;
             }
-            if(input["Controls"])
+            if(key_control.get_key_status("Controls"))
             {
                 std::cout<<"Controls:"<<std::endl;
                 std::cout<<"Show/Hide Polygon: P"<<std::endl;
@@ -405,17 +407,17 @@ int main(int argc,char* argv[])
                 std::cout<<"Make Collision: C"<<std::endl;
                 std::cout<<"Print Collision Info: SPACE"<<std::endl;
                 std::cout<<"--------------------"<<std::endl;
-                input["Controls"]=false;
+                key_control.get_key_status("Controls")=false;
             }
-            if(input["Frames"])
+            if(key_control.get_key_status("Frames"))
             {
                 print_frames=!print_frames;
-                input["Frames"]=false;
+                key_control.get_key_status("Frames")=false;
             }
-            if(input["Render"])
+            if(key_control.get_key_status("Render"))
             {
                 render_frames=!render_frames;
-                input["Render"]=false;
+                key_control.get_key_status("Render")=false;
             }
         }
         if(collision)
@@ -510,11 +512,11 @@ int main(int argc,char* argv[])
     }
     if(autosave)
     {
-        LL::FileStream txt_times;
+        LL::TextFile txt_times;
         std::string path_name=name_function+" (S="+LL::to_string(scene.size())+").csv";
         txt_times.set_path(path_name);
         txt_times.load();
-        txt_times.clear_file();
+        txt_times.clear();
         txt_times.insert_line(0,tiempos.size());
         unsigned int index=0;
         for(auto tiempo:tiempos)

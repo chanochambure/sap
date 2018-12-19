@@ -2,7 +2,7 @@
 #define SAP_GPU_LL_ITREE_PARALLEL_H_INCLUDED
 
 #include <CL/cl.h>
-#include <LexRisLogic/FileStream.h>
+#include <LexRisLogic/File.h>
 
 std::string sap_gpu_ll_kernel_program;
 //OPENCL
@@ -15,6 +15,8 @@ cl_kernel sap_gpu_ll_kernel;
 
 char* gpu_ll_results=nullptr;
 
+unsigned int gpu_ll_data_bytes=0;
+
 unsigned int RAM_getTotalBytes(unsigned int ramBytes)
 {
     return ramBytes+ceil(ramBytes/8.0);
@@ -24,15 +26,16 @@ void build_sap_gpu_ll_parallel(int local_size,unsigned int total_objects)
 {
     unsigned int max_outputs = (total_objects * (total_objects-1))/2;
     //LOAD FILE .c
-    LL::FileStream file;
+    LL::TextFile file;
     file.set_path("SAP_GPU_LL_ITree_Parallel.c");
     if(file.load())
     {
         for(unsigned int i=0;i<file.size();++i)
             sap_gpu_ll_kernel_program+=file[i]+"\n";
-        //1024 bytes = 1kb -> 1024 kb = 1 mb -> 256 mb
-        replace(sap_gpu_ll_kernel_program,"VAR1",LL::to_string(RAM_getTotalBytes(1024*1024*256)));
-        replace(sap_gpu_ll_kernel_program,"VAR2",LL::to_string(1024*1024*256));
+        //1024 bytes = 1kb -> 1024 kb = 1 mb -> 1 mb
+        gpu_ll_data_bytes=1024*1024*1;
+        replace(sap_gpu_ll_kernel_program,"VAR1",LL::to_string(RAM_getTotalBytes(gpu_ll_data_bytes)));
+        replace(sap_gpu_ll_kernel_program,"VAR2",LL::to_string(gpu_ll_data_bytes));
 //        replace(sap_gpu_ll_kernel_program,"VAR2",LL::to_string(local_size*(local_size-1)/2));
 //        replace(sap_gpu_ll_kernel_program,"VAR3",LL::to_string(local_size));
     }
@@ -81,11 +84,11 @@ void build_sap_gpu_ll_parallel(int local_size,unsigned int total_objects)
         printf("Error: Failed to create compute program!\n");
         exit(1);
     }
-    err = clBuildProgram(sap_gpu_ll_program, 0, NULL, "-I./GPU", NULL, NULL);
+    err = clBuildProgram(sap_gpu_ll_program, 0, NULL, NULL, NULL, NULL);
     if (err != CL_SUCCESS)
     {
         size_t len;
-        char buffer[2048];
+        char buffer[8192];
 
         printf("Error: Failed to build program executable!\n");
         clGetProgramBuildInfo(sap_gpu_ll_program, sap_gpu_ll_device_id, CL_PROGRAM_BUILD_LOG, sizeof(buffer), buffer, &len);
@@ -135,6 +138,7 @@ void SAP_GPU_LL_ITree_Parallel(float* objects,
     cl_mem input_buffer;
     cl_mem ref_buffer;
     cl_mem output_buffer;
+    cl_mem ram_buffer;
     input_buffer = clCreateBuffer(sap_gpu_ll_context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, total_real_objects * 5 * sizeof(float), objects, &err);
     if(err < 0)
     {
@@ -154,14 +158,21 @@ void SAP_GPU_LL_ITree_Parallel(float* objects,
         return;
     }
     unsigned int total_per_thread=std::ceil(1.0*size_x*size_y/threads);
+    int threads_func=1.0*size_x*size_y/total_per_thread;
+    ram_buffer= clCreateBuffer(sap_gpu_ll_context, CL_MEM_READ_WRITE , threads_func * gpu_ll_data_bytes * sizeof(char), NULL, &err);
+    if(err < 0)
+    {
+        printf("Couldn't create ram buffer");
+        return;
+    }
     err = clSetKernelArg(sap_gpu_ll_kernel, 0, sizeof(cl_mem), &input_buffer);
     err |= clSetKernelArg(sap_gpu_ll_kernel, 1, sizeof(cl_mem), &ref_buffer);
     err |= clSetKernelArg(sap_gpu_ll_kernel, 2, sizeof(cl_mem), &output_buffer);
-//    err |= clSetKernelArg(sap_gpu_ll_kernel, 3, (local_size*(local_size-1)/2) * sizeof(char), NULL);
-    err |= clSetKernelArg(sap_gpu_ll_kernel, 3, sizeof(unsigned int), &size_x);
-    err |= clSetKernelArg(sap_gpu_ll_kernel, 4, sizeof(unsigned int), &size_y);
-    err |= clSetKernelArg(sap_gpu_ll_kernel, 5, sizeof(unsigned int), &total_per_thread);
-    err |= clSetKernelArg(sap_gpu_ll_kernel, 6, sizeof(unsigned int), &total_objects);
+    err |= clSetKernelArg(sap_gpu_ll_kernel, 3, sizeof(cl_mem), &ram_buffer);
+    err |= clSetKernelArg(sap_gpu_ll_kernel, 4, sizeof(unsigned int), &size_x);
+    err |= clSetKernelArg(sap_gpu_ll_kernel, 5, sizeof(unsigned int), &size_y);
+    err |= clSetKernelArg(sap_gpu_ll_kernel, 6, sizeof(unsigned int), &total_per_thread);
+    err |= clSetKernelArg(sap_gpu_ll_kernel, 7, sizeof(unsigned int), &total_objects);
     if(err < 0)
     {
         printf("Couldn't create a kernel argument");
@@ -195,9 +206,10 @@ void SAP_GPU_LL_ITree_Parallel(float* objects,
     }
     unsigned int index_a=total_objects-1;
     unsigned int index_b=0;
-    std::cout<<*((int*)(&(gpu_ll_results[0])))<<std::endl;
+//    std::cout<<*((int*)(&(gpu_ll_results[0])))<<std::endl;
     for(unsigned int i=0;i<max_outputs;++i)
     {
+        std::cout<<"DATA "<<i<<": "<<int(gpu_ll_results[i])<<std::endl;
         if(gpu_ll_results[i])
         {
             total_collision[index_a]+=1;
@@ -211,9 +223,11 @@ void SAP_GPU_LL_ITree_Parallel(float* objects,
             index_b=0;
         }
     }
+    std::cout<<std::endl;
     //Collision END
     clReleaseMemObject(input_buffer);
     clReleaseMemObject(output_buffer);
+    clReleaseMemObject(ram_buffer);
     chronometer.stop();
     if(time_construction)
         *time_construction+=chronometer.get_time();

@@ -4,20 +4,7 @@
 #include "Memory.h"
 #include "Queue.h"
 
-float* CreateArray(RAM* ram,float* numbers,unsigned int n,bool x_y,int begin)
-{
-    int axis=(x_y)?3:1;
-    float* return_value=(float*)RAM_allocate(ram,n*3*sizeof(float));
-    for(unsigned int i=0;i<n;++i)
-    {
-        return_value[i+(2*n)]=numbers[(begin+i)*5];
-        return_value[i]=numbers[(begin+i)*5+axis];
-        return_value[i+n]=numbers[(begin+i)*5+axis+1];
-    }
-    return return_value;
-}
-
-unsigned int* RadixSort(RAM* ram,float* points,unsigned int size)
+unsigned int* RadixSort(struct RAM* ram,float* points,unsigned int size)
 {
     unsigned int* index=(unsigned int*)RAM_allocate(ram,size*sizeof(unsigned int));
     for(unsigned int i=0;i<size;++i)
@@ -34,21 +21,19 @@ unsigned int* RadixSort(RAM* ram,float* points,unsigned int size)
         ++cifras;
         max_value/=10;
     }
-    Queue* queues=(Queue*)RAM_allocate(ram,10*sizeof(Queue));
+    struct Queue* queues=(struct Queue*)RAM_allocate(ram,10*sizeof(struct Queue));
     for(unsigned int i=0;i<10;++i)
         queues[i]=Queue_create(ram);
     for(unsigned int i=0;i<cifras;i++)
     {
     	for(unsigned int j=0;j<size;++j)
     	{
-    		int d = int(points[index[j]]/pow(10,i))%10;
+    		int d = (int)(points[index[j]]/pow((float)10,(float)i))%10;
     		Queue_push(queues+d,index[j]);
     	}
     	int p=0;
     	for(unsigned int j=0;j<10;++j)
     	{
-    	    std::cout<<j<<std::endl;
-    	    std::cout<<"Data: "<<queues[j].size<<std::endl;
     		while(queues[j].size)
     		{
     			index[p]=Queue_front(&(queues[j]));
@@ -57,7 +42,7 @@ unsigned int* RadixSort(RAM* ram,float* points,unsigned int size)
     		}
     	}
     }
-    RAM_free(ram,(char*)queues,10*sizeof(Queue));
+    RAM_free(ram,(char*)queues,10*sizeof(struct Queue));
     return index;
 }
 

@@ -53,7 +53,7 @@ __kernel void sap_gpu_parallel(__global float* objects,__constant int* sizes,
     int max_data=parallel_x*parallel_y;
     int begin_index = index*total_per_thread;
     int end_index = (index+1)*total_per_thread;
-    if(index >= max_data)
+    if(begin_index >= max_data)
         return;
     int size_begin_real=0;
     for(int i=0;i<begin_index && i<max_data;++i)

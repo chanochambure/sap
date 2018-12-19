@@ -2,7 +2,7 @@
 #define SCENE_H_INCLUDED
 
 #include <LexRisLogic/MathStructures/Point.h>
-#include <LexRisLogic/FileStream.h>
+#include <LexRisLogic/File.h>
 #include <LexRisLogic/StringSplitter.h>
 #include <LexRisLogic/Math.h>
 
@@ -24,7 +24,7 @@ bool replace(std::string& str, const std::string& from, const std::string& to) {
 class Scene
 {
     private:
-        LL::FileStream _V_file;
+        LL::TextFile _V_file;
         std::vector<Object> _V_objects;
         std::vector<Object*>** _V_grid=nullptr;
         float* _V_grid_gpu=nullptr;
@@ -174,7 +174,7 @@ class Scene
         }
         void clear()
         {
-            _V_file.clear_file();
+            _V_file.clear();
             _V_objects.clear();
         }
         void create(bool unisize,unsigned int total)
@@ -203,7 +203,7 @@ class Scene
         }
         void save()
         {
-            _V_file.clear_file();
+            _V_file.clear();
             _V_file.insert_line(0,_V_objects.size());
             for(unsigned int i=0;i<_V_objects.size();++i)
             {

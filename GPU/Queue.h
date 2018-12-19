@@ -5,33 +5,33 @@
 
 struct QueueNode
 {
-    QueueNode* next;
-    QueueNode* prev;
+    struct QueueNode* next;
+    struct QueueNode* prev;
     unsigned int data;
 };
 
 struct Queue
 {
-    QueueNode* root;
+    struct QueueNode* root;
     unsigned int size;
-    RAM* ram;
+    struct RAM* ram;
 };
 
-Queue Queue_create(RAM* ram)
+struct Queue Queue_create(struct RAM* ram)
 {
-    Queue new_queue;
+    struct Queue new_queue;
     new_queue.root=NULL;
     new_queue.size=0;
     new_queue.ram=ram;
     return new_queue;
 }
 
-void Queue_push(Queue* queue,unsigned int data)
+void Queue_push(struct Queue* queue,unsigned int data)
 {
-    QueueNode* new_node=(QueueNode*)RAM_allocate(queue->ram,sizeof(QueueNode));
+    struct QueueNode* new_node=(struct QueueNode*)RAM_allocate(queue->ram,sizeof(struct QueueNode));
     new_node->data=data;
     new_node->next=NULL;
-    QueueNode** last=&(queue->root);
+    struct QueueNode** last=&(queue->root);
     for(;*last;last=&((*last)->next))
     {
         if(*last)
@@ -41,20 +41,20 @@ void Queue_push(Queue* queue,unsigned int data)
     queue->size+=1;
 }
 
-void Queue_pop(Queue* queue)
+void Queue_pop(struct Queue* queue)
 {
     if(queue->size)
     {
-        QueueNode* first=queue->root;
+        struct QueueNode* first=queue->root;
         queue->root=queue->root->next;
         if(queue->root)
             queue->root->prev=NULL;
-        RAM_free(queue->ram,(char*)first,sizeof(QueueNode));
+        RAM_free(queue->ram,(char*)first,sizeof(struct QueueNode));
         queue->size-=1;
     }
 }
 
-unsigned int Queue_front(Queue* queue)
+unsigned int Queue_front(struct Queue* queue)
 {
     if(queue->size)
         return queue->root->data;

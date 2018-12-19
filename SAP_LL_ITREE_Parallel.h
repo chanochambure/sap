@@ -103,6 +103,10 @@ void SAP_LL_ITREE_CPU_Parallel(std::vector<Object*>** objects,
         al_start_thread(thread_i);
     for(ALLEGRO_THREAD* thread_i:thread_list)
         al_join_thread(thread_i,nullptr);
+    chronometer.stop();
+    if(time_collision)
+        *time_collision=chronometer.get_time();
+    chronometer.play();
 //    std::cout<<"Thread Information"<<std::endl;
     for(int i=0;i<threads;++i)
     {
@@ -114,11 +118,11 @@ void SAP_LL_ITREE_CPU_Parallel(std::vector<Object*>** objects,
         delete(selected_data);
     }
     //Collision END
-    chronometer.stop();
-    if(time_collision)
-        *time_collision=chronometer.get_time();
     for(ALLEGRO_THREAD* thread_i:thread_list)
         al_destroy_thread(thread_i);
+    chronometer.stop();
+    if(time_construction)
+        *time_construction+=chronometer.get_time();
 }
 
 #endif // SAP_LL_ITREE_PARALLEL_H_INCLUDED
